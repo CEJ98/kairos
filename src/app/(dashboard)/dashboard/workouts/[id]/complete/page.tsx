@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { 
-import { logger } from '@/lib/logger'
   Trophy,
   Clock,
   Target,
@@ -20,6 +19,7 @@ import { logger } from '@/lib/logger'
   Calendar,
   Activity
 } from 'lucide-react'
+import { logger } from '@/lib/logger'
 import Link from 'next/link'
 import { toast } from 'react-hot-toast'
 

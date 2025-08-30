@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { 
-import { logger } from '@/lib/logger'
   Bell,
   Check,
   X,
@@ -20,6 +19,7 @@ import { logger } from '@/lib/logger'
   CheckCircle,
   XCircle
 } from 'lucide-react'
+import { logger } from '@/lib/logger'
 import { toast } from 'react-hot-toast'
 
 interface Notification {

@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { 
-import { logger } from '@/lib/logger'
   ArrowLeft,
   Plus,
   Search,
@@ -19,6 +18,7 @@ import { logger } from '@/lib/logger'
   Save,
   Play
 } from 'lucide-react'
+import { logger } from '@/lib/logger'
 import Link from 'next/link'
 import { toast } from 'react-hot-toast'
 

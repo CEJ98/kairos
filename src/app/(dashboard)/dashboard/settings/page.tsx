@@ -27,6 +27,7 @@ import {
 	Mail,
 	Smartphone
 } from 'lucide-react'
+import { logger } from '@/lib/logger'
 import { useRouter } from 'next/navigation'
 
 interface UserSettings {

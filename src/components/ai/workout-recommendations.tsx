@@ -7,11 +7,11 @@ import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
-import { logger } from '@/lib/logger'
 	Brain, Zap, Target, Clock, TrendingUp, Star, 
 	Play, Bookmark, RefreshCw, Sparkles, Activity,
 	User, Calendar, Award, ChevronRight, Filter
 } from 'lucide-react'
+import { logger } from '@/lib/logger'
 import { toast } from 'sonner'
 
 interface UserProfile {

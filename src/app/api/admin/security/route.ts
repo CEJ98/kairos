@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { 
-import { logger } from '@/lib/logger'
   getSecurityEvents, 
   getSecurityStats, 
   resolveSecurityEvent,
   detectSuspiciousActivity 
 } from '@/lib/security-audit'
+import { logger } from '@/lib/logger'
 import { getCSRFStats } from '@/lib/csrf-protection'
 import { withRateLimit, RATE_LIMIT_CONFIGS } from '@/lib/rate-limiter'
 import { applySecurityHeaders } from '@/lib/security-headers'

@@ -7,7 +7,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { 
-import { logger } from '@/lib/logger'
 	CheckCircle, 
 	Star, 
 	ArrowRight, 
@@ -16,6 +15,7 @@ import { logger } from '@/lib/logger'
 	Calendar,
 	Loader2
 } from 'lucide-react'
+import { logger } from '@/lib/logger'
 import Link from 'next/link'
 import { toast } from 'sonner'
 

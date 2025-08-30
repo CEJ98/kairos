@@ -40,6 +40,7 @@
     "deploy:auto": "node scripts/deploy-vercel.js",
     "deploy:verify": "node scripts/verify-deployment.js",
     "integration:verify": "node scripts/verify-integration.js",
+    "github:setup": "node scripts/github-vercel-integration.js",
     "vercel:link": "vercel link",
     "vercel:env": "vercel env ls",
     "vercel:logs": "vercel logs",

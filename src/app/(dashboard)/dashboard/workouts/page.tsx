@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { 
-import { logger } from '@/lib/logger'
   Plus, 
   Search, 
   Filter, 
@@ -22,6 +21,7 @@ import { logger } from '@/lib/logger'
   Users,
   Loader2
 } from 'lucide-react'
+import { logger } from '@/lib/logger'
 import { toast } from 'sonner'
 
 interface Workout {

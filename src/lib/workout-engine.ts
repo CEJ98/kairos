@@ -5,12 +5,12 @@
 
 import { prisma } from './db'
 import { 
-import { logger } from './logger'
   CreateWorkoutInput, 
   UpdateWorkoutInput,
   CreateWorkoutSessionInput,
   ExerciseFilterInput 
 } from './validations'
+import { logger } from './logger'
 
 // Types for workout engine
 export interface WorkoutRecommendation {
