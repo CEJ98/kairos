@@ -61,12 +61,12 @@ const customRender = (
 
 // Mock de useRouter
 export const mockUseRouter = {
-  push: jest.fn(),
-  replace: jest.fn(),
-  prefetch: jest.fn(),
-  back: jest.fn(),
-  forward: jest.fn(),
-  refresh: jest.fn(),
+  push: () => Promise.resolve(true),
+  replace: () => Promise.resolve(true),
+  prefetch: () => Promise.resolve(),
+  back: () => {},
+  forward: () => {},
+  refresh: () => {},
   pathname: '/',
   query: {},
   asPath: '/',

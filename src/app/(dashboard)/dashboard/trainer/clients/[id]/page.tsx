@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -57,7 +57,7 @@ export default function ClientDetailPage() {
 	const [loading, setLoading] = useState(true)
 
 	// Mock clients data - en producción vendría de una API
-	const mockClients: Client[] = [
+	const mockClients: Client[] = useMemo(() => [
 		{
 			id: '1',
 			name: 'María García',
@@ -121,16 +121,20 @@ export default function ClientDetailPage() {
 			satisfaction: 5,
 			notes: 'Cliente ejemplar, siempre puntual'
 		}
-	]
+	], [])
 
-	useEffect(() => {
+	const loadClient = useCallback(() => {
 		// Simular carga de datos
 		setTimeout(() => {
 			const foundClient = mockClients.find(c => c.id === clientId)
 			setClient(foundClient || null)
 			setLoading(false)
 		}, 500)
-	}, [clientId])
+	}, [clientId, mockClients])
+
+	useEffect(() => {
+		loadClient()
+	}, [loadClient])
 
 	const getStatusColor = (status: string) => {
 		return status === 'active' ? 'default' : 'secondary'

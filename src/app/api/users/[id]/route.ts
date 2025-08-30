@@ -7,8 +7,9 @@ import { logger } from '@/lib/logger'
 // GET /api/users/[id] - Obtener usuario específico
 export async function GET(
 	req: NextRequest,
-	{ params }: { params: { id: string } }
+	context: { params: Promise<{ id: string }> }
 ) {
+	const params = await context.params
 	try {
 		const session = await getServerSession(authOptions)
 		if (!session?.user) {
@@ -93,8 +94,9 @@ export async function GET(
 // PUT /api/users/[id] - Actualizar usuario
 export async function PUT(
 	req: NextRequest,
-	{ params }: { params: { id: string } }
+	context: { params: Promise<{ id: string }> }
 ) {
+	const params = await context.params
 	try {
 		const session = await getServerSession(authOptions)
 		if (!session?.user) {
@@ -203,8 +205,9 @@ export async function PUT(
 // DELETE /api/users/[id] - Eliminar usuario (solo admins)
 export async function DELETE(
 	req: NextRequest,
-	{ params }: { params: { id: string } }
+	context: { params: Promise<{ id: string }> }
 ) {
+	const params = await context.params
 	try {
 		const session = await getServerSession(authOptions)
 		if (!session?.user || session.user.role !== 'ADMIN') {

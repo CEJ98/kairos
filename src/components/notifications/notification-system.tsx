@@ -93,6 +93,31 @@ export default function NotificationSystem({ userId, userRole = 'trainer' }: Not
 	const [notifications, setNotifications] = useState<Notification[]>(mockNotifications)
 	const [isOpen, setIsOpen] = useState(false)
 
+	const showToast = useCallback((notification: Notification) => {
+		const toastConfig = {
+			title: notification.title,
+			description: notification.message,
+			action: notification.actionUrl ? {
+				label: notification.actionLabel || 'Ver',
+				onClick: () => window.location.href = notification.actionUrl!
+			} : undefined
+		}
+
+		switch (notification.type) {
+			case 'success':
+				toast.success(notification.title, toastConfig)
+				break
+			case 'error':
+				toast.error(notification.title, toastConfig)
+				break
+			case 'warning':
+				toast.warning(notification.title, toastConfig)
+				break
+			default:
+				toast.info(notification.title, toastConfig)
+		}
+	}, [])
+
 	// Simular notificaciones en tiempo real
 	useEffect(() => {
 		const interval = setInterval(() => {
@@ -118,32 +143,7 @@ export default function NotificationSystem({ userId, userRole = 'trainer' }: Not
 		}, 30000)
 
 		return () => clearInterval(interval)
-	}, [])
-
-	const showToast = useCallback((notification: Notification) => {
-		const toastConfig = {
-			title: notification.title,
-			description: notification.message,
-			action: notification.actionUrl ? {
-				label: notification.actionLabel || 'Ver',
-				onClick: () => window.location.href = notification.actionUrl!
-			} : undefined
-		}
-
-		switch (notification.type) {
-			case 'success':
-				toast.success(notification.title, toastConfig)
-				break
-			case 'error':
-				toast.error(notification.title, toastConfig)
-				break
-			case 'warning':
-				toast.warning(notification.title, toastConfig)
-				break
-			default:
-				toast.info(notification.title, toastConfig)
-		}
-	}, [])
+	}, [showToast])
 
 	const unreadCount = notifications.filter(n => !n.read).length
 

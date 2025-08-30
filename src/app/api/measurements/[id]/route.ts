@@ -7,8 +7,9 @@ import { logger } from '@/lib/logger'
 // GET /api/measurements/[id] - Obtener medición específica
 export async function GET(
 	req: NextRequest,
-	{ params }: { params: { id: string } }
+	context: { params: Promise<{ id: string }> }
 ) {
+	const params = await context.params
 	try {
 		const session = await getServerSession(authOptions)
 		if (!session?.user) {
@@ -43,8 +44,9 @@ export async function GET(
 // PUT /api/measurements/[id] - Actualizar medición
 export async function PUT(
 	req: NextRequest,
-	{ params }: { params: { id: string } }
+	context: { params: Promise<{ id: string }> }
 ) {
+	const params = await context.params
 	try {
 		const session = await getServerSession(authOptions)
 		if (!session?.user) {
@@ -111,8 +113,9 @@ export async function PUT(
 // DELETE /api/measurements/[id] - Eliminar medición
 export async function DELETE(
 	req: NextRequest,
-	{ params }: { params: { id: string } }
+	context: { params: Promise<{ id: string }> }
 ) {
+	const params = await context.params
 	try {
 		const session = await getServerSession(authOptions)
 		if (!session?.user) {

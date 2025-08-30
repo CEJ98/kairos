@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -131,6 +131,14 @@ export default function WorkoutStartPage() {
   const totalExercises = workout.exercises.length
   const workoutProgress = ((session.currentExerciseIndex) / totalExercises) * 100
 
+  const handleTimerComplete = useCallback(() => {
+    setIsTimerRunning(false)
+    toast.success(session.isResting ? '¡Descanso terminado!' : '¡Tiempo completado!')
+    
+    // Play sound notification (in production)
+    // playNotificationSound()
+  }, [session.isResting])
+
   // Timer effects
   useEffect(() => {
     if (isTimerRunning && timeLeft > 0) {
@@ -146,7 +154,7 @@ export default function WorkoutStartPage() {
         clearInterval(intervalRef.current)
       }
     }
-  }, [isTimerRunning, timeLeft])
+  }, [isTimerRunning, timeLeft, handleTimerComplete])
 
   const startTimer = (seconds: number) => {
     setTimeLeft(seconds)
@@ -160,14 +168,6 @@ export default function WorkoutStartPage() {
   const stopTimer = () => {
     setIsTimerRunning(false)
     setTimeLeft(0)
-  }
-
-  const handleTimerComplete = () => {
-    setIsTimerRunning(false)
-    toast.success(session.isResting ? '¡Descanso terminado!' : '¡Tiempo completado!')
-    
-    // Play sound notification (in production)
-    // playNotificationSound()
   }
 
   const startWorkout = () => {

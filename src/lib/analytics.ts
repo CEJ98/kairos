@@ -280,7 +280,7 @@ export class AnalyticsEngine {
 
       // await prisma.analyticsEvent.create({ data: event })
 
-      logger.debug(`Event tracked: ${eventName}`, { userId, data })
+      logger.debug(`Event tracked: ${eventName}`, { userId, event })
 
     } catch (error) {
       logger.error('Error tracking event', error, 'ANALYTICS')

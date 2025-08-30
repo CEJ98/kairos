@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -19,7 +19,7 @@ import { logger } from '@/lib/logger'
 import Link from 'next/link'
 import { toast } from 'sonner'
 
-export default function CheckoutSuccessPage() {
+function CheckoutSuccessPageContent() {
 	const { data: session } = useSession()
 	const searchParams = useSearchParams()
 	const router = useRouter()
@@ -214,5 +214,20 @@ export default function CheckoutSuccessPage() {
 				</Card>
 			</div>
 		</div>
+	)
+}
+
+export default function CheckoutSuccessPage() {
+	return (
+		<Suspense fallback={
+			<div className="min-h-screen flex items-center justify-center">
+				<div className="text-center space-y-4">
+					<Loader2 className="h-8 w-8 animate-spin mx-auto" />
+					<p className="text-gray-600">Verificando pago...</p>
+				</div>
+			</div>
+		}>
+			<CheckoutSuccessPageContent />
+		</Suspense>
 	)
 }

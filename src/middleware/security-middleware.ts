@@ -392,7 +392,7 @@ export async function securityMiddleware(
         )
       }
       
-      const csrfValid = await validateCSRFToken(csrfToken, userId || 'anonymous')
+      const csrfValid = validateCSRFToken(csrfToken, userId || 'anonymous', userId || 'anonymous')
       if (!csrfValid) {
         if (config.logging?.enabled) {
           logSecurityEvent(

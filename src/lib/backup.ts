@@ -535,7 +535,7 @@ export class BackupScheduler {
     // Backup completo
     const fullInterval = setInterval(() => {
       this.backupManager.createFullBackup()
-        .catch(error => logger.error('Error en backup programado:', error), 'BACKUP')
+        .catch(error => logger.error('Error en backup programado:', error, 'BACKUP'))
     }, config.fullBackupInterval * 60 * 60 * 1000)
     
     // Backup incremental
@@ -544,7 +544,7 @@ export class BackupScheduler {
       lastBackup.setHours(lastBackup.getHours() - config.incrementalInterval)
       
       this.backupManager.createIncrementalBackup(lastBackup)
-        .catch(error => logger.error('Error en backup incremental:', error), 'BACKUP')
+        .catch(error => logger.error('Error en backup incremental:', error, 'BACKUP'))
     }, config.incrementalInterval * 60 * 60 * 1000)
     
     this.intervals.push(fullInterval, incrementalInterval)

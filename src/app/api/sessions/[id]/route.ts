@@ -7,8 +7,9 @@ import { logger } from '@/lib/logger'
 // GET /api/sessions/[id] - Obtener sesión específica
 export async function GET(
 	req: NextRequest,
-	{ params }: { params: { id: string } }
+	context: { params: Promise<{ id: string }> }
 ) {
+	const params = await context.params
 	try {
 		const session = await getServerSession(authOptions)
 		if (!session?.user) {
@@ -88,8 +89,9 @@ export async function GET(
 // PUT /api/sessions/[id] - Actualizar sesión
 export async function PUT(
 	req: NextRequest,
-	{ params }: { params: { id: string } }
+	context: { params: Promise<{ id: string }> }
 ) {
+	const params = await context.params
 	try {
 		const session = await getServerSession(authOptions)
 		if (!session?.user) {
@@ -217,8 +219,9 @@ export async function PUT(
 // DELETE /api/sessions/[id] - Eliminar sesión
 export async function DELETE(
 	req: NextRequest,
-	{ params }: { params: { id: string } }
+	context: { params: Promise<{ id: string }> }
 ) {
+	const params = await context.params
 	try {
 		const session = await getServerSession(authOptions)
 		if (!session?.user) {

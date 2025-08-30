@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 
 import { logger } from '@/lib/logger'
@@ -73,7 +73,7 @@ export function useDashboardData(): DashboardData {
 	const [isLoading, setIsLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
 
-	const fetchDashboardData = async () => {
+	const fetchDashboardData = useCallback(async () => {
 		if (!session?.user) return
 
 		try {
@@ -181,7 +181,7 @@ export function useDashboardData(): DashboardData {
 		} finally {
 			setIsLoading(false)
 		}
-	}
+	}, [session])
 
 	useEffect(() => {
 		fetchDashboardData()

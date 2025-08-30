@@ -125,34 +125,26 @@ export const useSmartPreloader = (options: SmartPreloaderOptions = {}) => {
 		}
 	}, [enableHoverPreload, preloadRoute])
 
-	// Hook para precargar por visibilidad
-	const useVisibilityPreload = useCallback((route: string) => {
-		const elementRef = useRef<HTMLElement>(null)
-		const preloadEnabled = enableVisibilityPreload
+	// Función para crear preloader por visibilidad
+	const createVisibilityPreloader = useCallback((route: string) => {
+		if (!enableVisibilityPreload) return null
 
-		useEffect(() => {
-			if (!preloadEnabled || !elementRef.current) return
+		const observer = new IntersectionObserver(
+			(entries) => {
+				entries.forEach(entry => {
+					if (entry.isIntersecting) {
+						preloadRoute(route)
+						observer.unobserve(entry.target)
+					}
+				})
+			},
+			{ rootMargin: '100px' }
+		)
 
-			const observer = new IntersectionObserver(
-				(entries) => {
-					entries.forEach(entry => {
-						if (entry.isIntersecting) {
-							preloadRoute(route)
-							observer.unobserve(entry.target)
-						}
-					})
-				},
-				{ rootMargin: '100px' }
-			)
-
-			observer.observe(elementRef.current)
-
-			return () => {
-				observer.disconnect()
-			}
-		}, [route, preloadEnabled, preloadRoute])
-
-		return elementRef
+		return {
+			observe: (element: Element) => observer.observe(element),
+			disconnect: () => observer.disconnect()
+		}
 	}, [enableVisibilityPreload, preloadRoute])
 
 	// Funciones para precargar manualmente
@@ -174,7 +166,8 @@ export const useSmartPreloader = (options: SmartPreloaderOptions = {}) => {
 
 	return {
 		useHoverPreload,
-		useVisibilityPreload,
+		createVisibilityPreloader,
+		preloadRoute,
 		manualPreload,
 		getPreloaderState,
 		isIdle: () => isIdleRef.current
@@ -225,6 +218,36 @@ export const useTrainerPreloader = () => {
 		],
 		idleDelay: 2000
 	})
+}
+
+// Hook separado para preloader por visibilidad
+export const useVisibilityPreloader = (route: string, enabled: boolean = true) => {
+	const elementRef = useRef<HTMLElement>(null)
+	const { preloadRoute } = useSmartPreloader()
+
+	useEffect(() => {
+		if (!enabled || !elementRef.current) return
+
+		const observer = new IntersectionObserver(
+			(entries) => {
+				entries.forEach(entry => {
+					if (entry.isIntersecting) {
+						preloadRoute(route)
+						observer.unobserve(entry.target)
+					}
+				})
+			},
+			{ rootMargin: '100px' }
+		)
+
+		observer.observe(elementRef.current)
+
+		return () => {
+			observer.disconnect()
+		}
+	}, [enabled, route, preloadRoute])
+
+	return elementRef
 }
 
 export default useSmartPreloader
