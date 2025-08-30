@@ -1,0 +1,81 @@
+{
+  "timestamp": "2025-08-29T14:30:15.179Z",
+  "totalLinks": 80,
+  "brokenLinks": [
+    {
+      "type": "router.push",
+      "href": "/dashboard/billing?success=true",
+      "file": "src/app/checkout/page.tsx"
+    },
+    {
+      "type": "router.push",
+      "href": "/signin?callbackUrl=/checkout",
+      "file": "src/app/checkout/page.tsx"
+    },
+    {
+      "type": "Link",
+      "href": "/signup?role=client",
+      "file": "src/app/page.tsx"
+    },
+    {
+      "type": "Link",
+      "href": "/signup?role=trainer",
+      "file": "src/app/page.tsx"
+    },
+    {
+      "type": "Link",
+      "href": "#features",
+      "file": "src/app/page.tsx"
+    },
+    {
+      "type": "Link",
+      "href": "#",
+      "file": "src/app/page.tsx"
+    },
+    {
+      "type": "Link",
+      "href": "#",
+      "file": "src/app/page.tsx"
+    }
+  ],
+  "missingRoutes": [
+    "/dashboard/billing?success=true",
+    "/signin?callbackUrl=/checkout",
+    "/signup?role=client",
+    "/signup?role=trainer"
+  ],
+  "existingRoutes": [
+    "/",
+    "/contact",
+    "/checkout",
+    "/checkout/success",
+    "/signup",
+    "/signin",
+    "/pricing",
+    "/terms",
+    "/privacy",
+    "/dashboard",
+    "/dashboard/settings",
+    "/dashboard/calendar",
+    "/dashboard/progress",
+    "/dashboard/progress/measurements",
+    "/dashboard/workouts",
+    "/dashboard/workouts/live",
+    "/dashboard/workouts/new",
+    "/dashboard/workouts/[id]/complete",
+    "/dashboard/workouts/[id]/start",
+    "/dashboard/profile",
+    "/dashboard/exercises",
+    "/dashboard/activities",
+    "/dashboard/community",
+    "/dashboard/billing",
+    "/dashboard/trainer",
+    "/dashboard/trainer/clients",
+    "/dashboard/trainer/clients/[id]",
+    "/dashboard/trainer/workouts",
+    "/dashboard/trainer/workouts/new",
+    "/dashboard/trainer/calendar",
+    "/dashboard/trainer/billing",
+    "/admin/backup"
+  ]
+}

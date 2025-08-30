@@ -1,0 +1,100 @@
+{
+	"$schema": "https://openapi.vercel.sh/vercel.json",
+	"framework": "nextjs",
+	"buildCommand": "npm run build",
+	"devCommand": "npm run dev",
+	"installCommand": "npm ci",
+	"outputDirectory": ".next",
+	"cleanUrls": true,
+	"trailingSlash": false,
+	"functions": {
+		"src/app/api/stripe/webhooks/route.ts": {
+			"maxDuration": 30
+		},
+		"src/app/api/auth/**/*.ts": {
+			"maxDuration": 10
+		},
+		"src/app/api/**/*.ts": {
+			"maxDuration": 15
+		}
+	},
+	"rewrites": [
+		{
+			"source": "/api/stripe/webhooks",
+			"destination": "/api/stripe/webhooks"
+		},
+		{
+			"source": "/healthz",
+			"destination": "/api/health"
+		}
+	],
+	"redirects": [
+		{
+			"source": "/dashboard",
+			"destination": "/dashboard/overview",
+			"permanent": false
+		}
+	],
+	"headers": [
+		{
+			"source": "/api/(.*)",
+			"headers": [
+				{
+					"key": "Access-Control-Allow-Origin",
+					"value": "*"
+				},
+				{
+					"key": "Access-Control-Allow-Methods",
+					"value": "GET, POST, PUT, DELETE, OPTIONS"
+				},
+				{
+					"key": "Access-Control-Allow-Headers",
+					"value": "Content-Type, Authorization, X-Requested-With"
+				},
+				{
+					"key": "X-Content-Type-Options",
+					"value": "nosniff"
+				},
+				{
+					"key": "X-Frame-Options",
+					"value": "DENY"
+				},
+				{
+					"key": "X-XSS-Protection",
+					"value": "1; mode=block"
+				}
+			]
+		},
+		{
+			"source": "/(.*)",
+			"headers": [
+				{
+					"key": "Strict-Transport-Security",
+					"value": "max-age=31536000; includeSubDomains; preload"
+				},
+				{
+					"key": "Referrer-Policy",
+					"value": "strict-origin-when-cross-origin"
+				},
+				{
+					"key": "Permissions-Policy",
+					"value": "camera=(), microphone=(), geolocation=()"
+				}
+			]
+		}
+	],
+	"regions": ["iad1"],
+	"crons": [
+		{
+			"path": "/api/cron/cleanup",
+			"schedule": "0 2 * * *"
+		},
+		{
+			"path": "/api/cron/backup",
+			"schedule": "0 3 * * 0"
+		}
+	],
+	"env": {
+		"NODE_ENV": "production"
+	}
+}

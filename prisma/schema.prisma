@@ -1,0 +1,305 @@
+// Prisma Schema para Kairos Fitness App - SQLite version
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =================== USUARIOS ===================
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  name        String?
+  avatar      String?
+  password    String?
+  role        String   @default("CLIENT") // CLIENT, TRAINER, ADMIN
+  isVerified  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relaciones como Cliente
+  workouts         Workout[]
+  workoutSessions  WorkoutSession[]
+  clientProfiles   ClientProfile[]
+  subscriptions    Subscription[]
+
+  // Relaciones como Entrenador
+  trainerProfile   TrainerProfile?
+  createdWorkouts  Workout[]        @relation("CreatedWorkouts")
+
+  @@map("users")
+}
+
+// =================== PERFILES ===================
+model ClientProfile {
+  id       String @id @default(cuid())
+  userId   String
+  trainerId String?
+  
+  // Datos personales
+  age      Int?
+  weight   Float?
+  height   Float?
+  gender   String? // MALE, FEMALE, OTHER
+  
+  // Objetivos fitness
+  fitnessGoal    String? // WEIGHT_LOSS, MUSCLE_GAIN, etc.
+  activityLevel  String? // SEDENTARY, LIGHT, MODERATE, etc.
+  
+  // Relaciones
+  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trainer TrainerProfile?  @relation(fields: [trainerId], references: [id])
+
+  @@map("client_profiles")
+}
+
+model TrainerProfile {
+  id          String @id @default(cuid())
+  userId      String @unique
+  
+  // Información profesional
+  bio         String?
+  experience  Int?     // años de experiencia
+  specialties String?  // JSON string of specialties
+  hourlyRate  Float?   // tarifa por hora
+  
+  // Configuración
+  isActive    Boolean  @default(true)
+  maxClients  Int      @default(50)
+  
+  // Relaciones
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clients     ClientProfile[]
+
+  @@map("trainer_profiles")
+}
+
+// =================== EJERCICIOS ===================
+model Exercise {
+  id          String @id @default(cuid())
+  name        String
+  description String?
+  
+  // Multimedia
+  imageUrl    String?
+  videoUrl    String?
+  gifUrl      String?
+  
+  // Categorización
+  category    String   // STRENGTH, CARDIO, FLEXIBILITY, etc.
+  muscleGroups String? // JSON string of muscle groups
+  equipments   String? // JSON string of equipment
+  difficulty  String   // BEGINNER, INTERMEDIATE, ADVANCED, EXPERT
+  
+  // Instrucciones
+  instructions String?
+  tips         String?
+  
+  // Métricas
+  isActive     Boolean @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // Relaciones
+  workoutExercises WorkoutExercise[]
+  exerciseLogs     ExerciseLog[]
+  personalRecords  PersonalRecord[]
+
+  @@map("exercises")
+}
+
+// =================== RUTINAS ===================
+model Workout {
+  id          String @id @default(cuid())
+  name        String
+  description String?
+  
+  // Propietario y asignación
+  creatorId   String
+  assignedToId String?
+  
+  // Configuración
+  isTemplate  Boolean @default(false)
+  isPublic    Boolean @default(false)
+  category    String? // STRENGTH, CARDIO, HIIT, etc.
+  duration    Int?    // minutos estimados
+  
+  // Métricas
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relaciones
+  creator     User              @relation("CreatedWorkouts", fields: [creatorId], references: [id])
+  assignedTo  User?             @relation(fields: [assignedToId], references: [id])
+  exercises   WorkoutExercise[]
+  sessions    WorkoutSession[]
+
+  @@map("workouts")
+}
+
+model WorkoutExercise {
+  id          String @id @default(cuid())
+  workoutId   String
+  exerciseId  String
+  order       Int    // orden en la rutina
+  
+  // Configuración del ejercicio
+  sets        Int?
+  reps        Int?
+  weight      Float?
+  duration    Int?    // segundos
+  distance    Float?  // metros/km
+  restTime    Int?    // segundos de descanso
+  
+  // Notas del entrenador
+  notes       String?
+  
+  // Relaciones
+  workout     Workout  @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  exercise    Exercise @relation(fields: [exerciseId], references: [id])
+
+  @@unique([workoutId, order])
+  @@map("workout_exercises")
+}
+
+// =================== SESIONES DE ENTRENAMIENTO ===================
+model WorkoutSession {
+  id          String @id @default(cuid())
+  userId      String
+  workoutId   String
+  
+  // Timing
+  startTime   DateTime
+  endTime     DateTime?
+  duration    Int?        // segundos reales
+  
+  // Estado
+  status      String @default("IN_PROGRESS") // PLANNED, IN_PROGRESS, COMPLETED, etc.
+  
+  // Métricas generales
+  notes       String?
+  rating      Int?        // 1-5 estrellas
+  caloriesBurned Int?
+  
+  // Relaciones
+  user        User             @relation(fields: [userId], references: [id])
+  workout     Workout          @relation(fields: [workoutId], references: [id])
+  exercises   ExerciseLog[]
+
+  @@map("workout_sessions")
+}
+
+model ExerciseLog {
+  id        String @id @default(cuid())
+  sessionId String
+  exerciseId String
+  order     Int
+  
+  // Performance real
+  setsCompleted    Int?
+  repsCompleted    String?   // JSON string of reps per set
+  weightUsed       String?   // JSON string of weight per set
+  durationActual   Int?      // segundos
+  distanceActual   Float?
+  
+  // Métricas
+  restTimeActual   Int?    // descanso real
+  difficulty       Int?    // 1-10
+  notes           String?
+  
+  // Relaciones
+  session         WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  exercise        Exercise       @relation(fields: [exerciseId], references: [id])
+
+  @@unique([sessionId, order])
+  @@map("exercise_logs")
+}
+
+// =================== SUSCRIPCIONES Y PAGOS ===================
+model Subscription {
+  id                String           @id @default(cuid())
+  userId            String
+  
+  // Stripe
+  stripeCustomerId     String?  @unique
+  stripeSubscriptionId String?  @unique
+  stripePriceId        String?
+  
+  // Plan
+  planType          String // FREE, BASIC, PRO, TRAINER, ENTERPRISE
+  status            String // ACTIVE, CANCELED, etc.
+  
+  // Fechas
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  cancelAtPeriodEnd  Boolean   @default(false)
+  
+  // Timestamps
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  // Relaciones
+  user              User      @relation(fields: [userId], references: [id])
+
+  @@map("subscriptions")
+}
+
+// =================== COMUNICACIÓN ===================
+model Message {
+  id          String @id @default(cuid())
+  fromId      String
+  toId        String
+  content     String
+  type        String @default("TEXT") // TEXT, WORKOUT_ASSIGNMENT, etc.
+  isRead      Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  
+  @@map("messages")
+}
+
+// =================== PROGRESO Y MÉTRICAS ===================
+model BodyMeasurement {
+  id        String @id @default(cuid())
+  userId    String
+  
+  // Métricas corporales
+  weight    Float?
+  bodyFat   Float?
+  muscle    Float?
+  
+  // Medidas
+  chest     Float?
+  waist     Float?
+  hips      Float?
+  arms      Float?
+  thighs    Float?
+  
+  // Fecha
+  measuredAt DateTime
+  notes      String?
+
+  @@map("body_measurements")
+}
+
+model PersonalRecord {
+  id          String @id @default(cuid())
+  userId      String
+  exerciseId  String
+  
+  // Record
+  recordType  String // MAX_WEIGHT, MAX_REPS, BEST_TIME, etc.
+  value       Float  // peso, tiempo, distancia, etc.
+  reps        Int?
+  
+  // Fecha del record
+  achievedAt  DateTime
+  
+  // Relación con ejercicio
+  exercise    Exercise @relation(fields: [exerciseId], references: [id])
+
+  @@unique([userId, exerciseId, recordType])
+  @@map("personal_records")
+}

@@ -1,0 +1,196 @@
+{
+  "timestamp": "2025-08-29T14:28:58.128Z",
+  "summary": {
+    "total": 36,
+    "passed": 0,
+    "failed": 36,
+    "skipped": 0,
+    "successRate": 0
+  },
+  "results": {
+    "passed": [],
+    "failed": [
+      {
+        "route": "/",
+        "description": "Página de inicio",
+        "error": "Página 404"
+      },
+      {
+        "route": "/contact",
+        "description": "Página de contacto",
+        "error": "Página 404"
+      },
+      {
+        "route": "/pricing",
+        "description": "Página de precios",
+        "error": "Página 404"
+      },
+      {
+        "route": "/terms",
+        "description": "Términos y condiciones",
+        "error": "Página 404"
+      },
+      {
+        "route": "/privacy",
+        "description": "Política de privacidad",
+        "error": "Página 404"
+      },
+      {
+        "route": "/signin",
+        "description": "Página de login",
+        "error": "Página 404"
+      },
+      {
+        "route": "/signup",
+        "description": "Página de registro",
+        "error": "Página 404"
+      },
+      {
+        "route": "/dashboard",
+        "description": "Dashboard principal",
+        "error": "Página 404"
+      },
+      {
+        "route": "/dashboard/profile",
+        "description": "Perfil de usuario",
+        "error": "Página 404"
+      },
+      {
+        "route": "/dashboard/workouts",
+        "description": "Rutinas de ejercicio",
+        "error": "Página 404"
+      },
+      {
+        "route": "/dashboard/exercises",
+        "description": "Ejercicios",
+        "error": "Página 404"
+      },
+      {
+        "route": "/dashboard/progress",
+        "description": "Progreso",
+        "error": "net::ERR_ABORTED at http://localhost:3000/dashboard/progress"
+      },
+      {
+        "route": "/dashboard/calendar",
+        "description": "Calendario",
+        "error": "Página 404"
+      },
+      {
+        "route": "/dashboard/activities",
+        "description": "Actividades",
+        "error": "Página 404"
+      },
+      {
+        "route": "/dashboard/community",
+        "description": "Comunidad",
+        "error": "Página 404"
+      },
+      {
+        "route": "/dashboard/billing",
+        "description": "Facturación",
+        "error": "Página 404"
+      },
+      {
+        "route": "/dashboard/settings",
+        "description": "Configuración",
+        "error": "Página 404"
+      },
+      {
+        "route": "/dashboard/trainer",
+        "description": "Dashboard del entrenador",
+        "error": "Página 404"
+      },
+      {
+        "route": "/dashboard/trainer/clients",
+        "description": "Clientes del entrenador",
+        "error": "Página 404"
+      },
+      {
+        "route": "/dashboard/trainer/workouts",
+        "description": "Rutinas del entrenador",
+        "error": "Página 404"
+      },
+      {
+        "route": "/dashboard/trainer/calendar",
+        "description": "Calendario del entrenador",
+        "error": "Página 404"
+      },
+      {
+        "route": "/dashboard/trainer/billing",
+        "description": "Facturación del entrenador",
+        "error": "Página 404"
+      },
+      {
+        "route": "/",
+        "description": "Enlace: Kairos",
+        "error": "Login falló"
+      },
+      {
+        "route": "/signin",
+        "description": "Enlace: Iniciar Sesión",
+        "error": "Página 404"
+      },
+      {
+        "route": "/signup",
+        "description": "Enlace: Registrarse",
+        "error": "Página 404"
+      },
+      {
+        "route": "/signup?role=client",
+        "description": "Enlace: Empezar Gratis",
+        "error": "Página 404"
+      },
+      {
+        "route": "/signup?role=trainer",
+        "description": "Enlace: Soy Entrenador",
+        "error": "Página 404"
+      },
+      {
+        "route": "/signup",
+        "description": "Enlace: Comenzar Ahora - Es Gratis",
+        "error": "Página 404"
+      },
+      {
+        "route": "/",
+        "description": "Enlace: Kairos",
+        "error": "Página 404"
+      },
+      {
+        "route": "/pricing",
+        "description": "Enlace: Precios",
+        "error": "Login falló"
+      },
+      {
+        "route": "/dashboard",
+        "description": "Enlace: Demo",
+        "error": "Página 404"
+      },
+      {
+        "route": "/contact",
+        "description": "Enlace: API",
+        "error": "Página 404"
+      },
+      {
+        "route": "/contact",
+        "description": "Enlace: Centro de Ayuda",
+        "error": "Login falló"
+      },
+      {
+        "route": "/contact",
+        "description": "Enlace: Contacto",
+        "error": "Página 404"
+      },
+      {
+        "route": "/dashboard",
+        "description": "Enlace: Estado",
+        "error": "Login falló"
+      },
+      {
+        "route": "/contact",
+        "description": "Enlace: Comunidad",
+        "error": "Página 404"
+      }
+    ],
+    "skipped": []
+  }
+}
