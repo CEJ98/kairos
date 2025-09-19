@@ -12,7 +12,6 @@ import { ArrowLeft, Plus, Trash2, Clock, Target, Users } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
-import { logger } from '@/lib/logger'
 interface Exercise {
 	id: string
 	name: string
@@ -76,7 +75,7 @@ export default function NewWorkoutPage() {
 
 	const handleSave = () => {
 		// Aquí iría la lógica para guardar el entrenamiento
-		logger.debug('Guardando entrenamiento:', { workoutData, exercises })
+		console.log('Guardando entrenamiento:', { workoutData, exercises })
 		router.push('/dashboard/trainer/workouts')
 	}
 

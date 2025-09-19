@@ -123,27 +123,27 @@ export default function ActivitiesPage() {
       </div>
 
       {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-3">
+      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 px-6 py-3">
         <div className="flex justify-around items-center max-w-md mx-auto">
           <div className="flex flex-col items-center gap-1">
-            <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-              <Home className="w-5 h-5 text-gray-600" />
+            <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
+              <Home className="w-5 h-5 text-gray-600 dark:text-gray-300" />
             </div>
-            <span className="text-xs text-gray-500">Home</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">Home</span>
           </div>
           
           <div className="flex flex-col items-center gap-1">
-            <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+            <div className="w-10 h-10 bg-blue-500 dark:bg-blue-600 rounded-full flex items-center justify-center">
               <Activity className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xs text-blue-500 font-medium">Dashboard</span>
+            <span className="text-xs text-blue-500 dark:text-blue-400 font-medium">Dashboard</span>
           </div>
           
           <div className="flex flex-col items-center gap-1">
-            <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-              <Target className="w-5 h-5 text-gray-600" />
+            <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
+              <Target className="w-5 h-5 text-gray-600 dark:text-gray-300" />
             </div>
-            <span className="text-xs text-gray-500">Bookmarks</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">Bookmarks</span>
           </div>
           
           <div className="flex flex-col items-center gap-1">
@@ -167,3 +167,4 @@ export default function ActivitiesPage() {
     </div>
   )
 }
+

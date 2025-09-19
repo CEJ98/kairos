@@ -1,0 +1,47 @@
+{
+  "timestamp": "2025-09-02T00:22:23.193Z",
+  "summary": {
+    "totalTests": 0,
+    "totalPassed": 0,
+    "totalFailed": 0,
+    "successRate": 0,
+    "duration": 15579
+  },
+  "breakdown": {
+    "unit": {
+      "passed": 0,
+      "failed": 0,
+      "total": 0,
+      "duration": 0
+    },
+    "integration": {
+      "passed": 0,
+      "failed": 0,
+      "total": 0,
+      "duration": 0
+    },
+    "security": {
+      "passed": 0,
+      "failed": 0,
+      "total": 0,
+      "duration": 0
+    },
+    "e2e": {
+      "passed": 0,
+      "failed": 0,
+      "total": 0,
+      "duration": 0
+    },
+    "coverage": {
+      "lines": 0,
+      "functions": 0,
+      "branches": 0,
+      "statements": 0
+    }
+  },
+  "recommendations": [
+    "Increase line coverage by adding tests for untested code paths",
+    "Add more conditional logic tests to improve branch coverage",
+    "Add security tests to validate authentication and authorization"
+  ]
+}

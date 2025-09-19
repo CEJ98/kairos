@@ -19,14 +19,13 @@ import {
   Calendar,
   Activity
 } from 'lucide-react'
-import { logger } from '@/lib/logger'
 import Link from 'next/link'
 import { toast } from 'react-hot-toast'
 
 export default function WorkoutCompletePage() {
-  const params = useParams()
+  const params = useParams() as { id?: string } | null
   const router = useRouter()
-  const workoutId = params.id as string
+  const workoutId = (params?.id as string) || ''
 
   const [rating, setRating] = useState(0)
   const [notes, setNotes] = useState('')
@@ -98,7 +97,7 @@ export default function WorkoutCompletePage() {
         ...sessionData
       }
 
-      logger.debug('Saving session:', sessionPayload)
+      console.log('Saving session:', sessionPayload)
       toast.success('Sesión guardada exitosamente')
       
       // Redirect to dashboard
@@ -119,7 +118,7 @@ export default function WorkoutCompletePage() {
           url: window.location.origin
         })
       } catch (error) {
-        logger.debug('Error sharing:', error)
+        console.log('Error sharing:', error)
       }
     } else {
       // Fallback: copiar al clipboard

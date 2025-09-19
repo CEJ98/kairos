@@ -1,0 +1,6 @@
+<svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="72" height="72" rx="16" fill="#10B981"/>
+  <path d="M36 18C27.163 18 20 25.163 20 34C20 42.837 27.163 50 36 50C44.837 50 52 42.837 52 34C52 25.163 44.837 18 36 18ZM36 22C42.627 22 48 27.373 48 34C48 40.627 42.627 46 36 46C29.373 46 24 40.627 24 34C24 27.373 29.373 22 36 22Z" fill="white"/>
+  <path d="M36 26C31.582 26 28 29.582 28 34C28 38.418 31.582 42 36 42C40.418 42 44 38.418 44 34C44 29.582 40.418 26 36 26ZM36 30C38.209 30 40 31.791 40 34C40 36.209 38.209 38 36 38C33.791 38 32 36.209 32 34C32 31.791 33.791 30 36 30Z" fill="white"/>
+  <text x="36" y="60" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="8" font-weight="bold">K</text>
+</svg>

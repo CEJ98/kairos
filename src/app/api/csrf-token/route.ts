@@ -5,7 +5,6 @@ import { generateCSRFToken } from '@/lib/csrf-protection'
 import { withRateLimit, RATE_LIMIT_CONFIGS } from '@/lib/rate-limiter'
 import { applySecurityHeaders } from '@/lib/security-headers'
 
-import { logger } from '@/lib/logger'
 /**
  * GET /api/csrf-token
  * Returns a CSRF token for the current authenticated session
@@ -41,7 +40,7 @@ export async function GET(req: NextRequest) {
     return applySecurityHeaders(response)
     
   } catch (error) {
-    logger.error('Error generating CSRF token:', error, 'API')
+    console.error('Error generating CSRF token:', error)
     
     const response = NextResponse.json(
       { error: 'Internal server error' },
@@ -93,7 +92,7 @@ export async function POST(req: NextRequest) {
     return applySecurityHeaders(response)
     
   } catch (error) {
-    logger.error('Error validating CSRF token:', error, 'API')
+    console.error('Error validating CSRF token:', error)
     
     const response = NextResponse.json(
       { error: 'Internal server error' },

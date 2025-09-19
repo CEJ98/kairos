@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { workoutCreateSchema } from '@/lib/validations/api-schemas'
 
 import { logger } from '@/lib/logger'
 // GET /api/workouts - Obtener rutinas del usuario
@@ -139,33 +140,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
-    const body = await req.json()
-    const {
-      name,
-      description,
-      category,
-      isTemplate,
-      isPublic,
-      assignedToId,
-      exercises
-    } = body
-
-    // Validaciones
-    if (!name || !category) {
-      return NextResponse.json(
-        { error: 'Campos obligatorios: name, category' },
-        { status: 400 }
-      )
+    let parsed
+    try {
+      const json = await req.json()
+      parsed = workoutCreateSchema.safeParse(json)
+    } catch {
+      return NextResponse.json({ error: 'JSON inválido' }, { status: 400 })
     }
 
-    if (exercises && exercises.length === 0) {
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: 'La rutina debe tener al menos un ejercicio' },
+        { error: 'Validación fallida', details: parsed.error.flatten() },
         { status: 400 }
       )
     }
 
     // Verificar que el usuario puede asignar la rutina
+    const { name, description, category, isTemplate, isPublic, assignedToId, exercises } = parsed.data
     if (assignedToId && assignedToId !== session.user.id) {
       // Solo entrenadores pueden asignar rutinas a otros usuarios
       if (session.user.role !== 'TRAINER') {
@@ -205,8 +196,8 @@ export async function POST(req: NextRequest) {
           name,
           description,
           category,
-          isTemplate: isTemplate || false,
-          isPublic: isPublic || false,
+          isTemplate: isTemplate ?? false,
+          isPublic: isPublic ?? false,
           creatorId: session.user.id,
           assignedToId: assignedToId || session.user.id,
         }

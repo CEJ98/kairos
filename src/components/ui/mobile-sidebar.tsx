@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { 
   Dumbbell, 
   LayoutDashboard, 
@@ -16,7 +17,8 @@ import {
   Users,
   DollarSign,
   Calendar,
-  ChevronRight
+  ChevronRight,
+  Brain
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -38,10 +40,12 @@ interface NavigationItem {
 
 export default function MobileSidebar({ isOpen, onClose, userRole = 'CLIENT' }: MobileSidebarProps) {
   const { data: session } = useSession()
-  const pathname = usePathname()
+  const pathname = usePathname() || ''
   const sidebarRef = useRef<HTMLDivElement>(null)
   const [touchStart, setTouchStart] = useState<number | null>(null)
   const [touchEnd, setTouchEnd] = useState<number | null>(null)
+  const closeBtnRef = useRef<HTMLButtonElement>(null)
+  const previouslyFocused = useRef<HTMLElement | null>(null)
 
   const isTrainer = userRole === 'TRAINER'
   const isAdmin = userRole === 'ADMIN'
@@ -55,7 +59,7 @@ export default function MobileSidebar({ isOpen, onClose, userRole = 'CLIENT' }: 
       description: 'Vista general de tu progreso'
     },
     { 
-      href: '/dashboard/workouts', 
+      href: '/workouts', 
       icon: <Dumbbell size={20} />, 
       label: 'Rutinas',
       description: 'Tus entrenamientos personalizados'
@@ -102,10 +106,16 @@ export default function MobileSidebar({ isOpen, onClose, userRole = 'CLIENT' }: 
       description: 'Gestiona tus clientes'
     },
     { 
-      href: '/dashboard/trainer/workouts', 
+      href: '/workouts', 
       icon: <Dumbbell size={20} />, 
       label: 'Rutinas',
       description: 'Crea y edita rutinas'
+    },
+    { 
+      href: '/dashboard/trainer/ai-workouts', 
+      icon: <Brain size={20} />, 
+      label: 'AI Workouts',
+      description: 'Entrenamientos con IA'
     },
     { 
       href: '/dashboard/trainer/calendar', 
@@ -127,9 +137,62 @@ export default function MobileSidebar({ isOpen, onClose, userRole = 'CLIENT' }: 
     },
   ]
 
-  const navigation = isTrainer ? trainerNavigation : clientNavigation
+  // Navegación para administradores
+  const adminNavigation: NavigationItem[] = [
+    { 
+      href: '/admin', 
+      icon: <Settings size={20} />, 
+      label: 'Administración',
+      description: 'Panel de administración'
+    },
+    { 
+      href: '/admin/backup', 
+      icon: <Settings size={20} />, 
+      label: 'Respaldos',
+      description: 'Gestión de copias de seguridad'
+    },
+    { 
+      href: '/admin/stripe-webhooks', 
+      icon: <Settings size={20} />, 
+      label: 'Stripe Webhooks',
+      description: 'Configuración de webhooks de Stripe'
+    },
+    { 
+      href: '/dashboard', 
+      icon: <LayoutDashboard size={20} />, 
+      label: 'Dashboard',
+      description: 'Vista general'
+    },
+    { 
+      href: '/workouts', 
+      icon: <Dumbbell size={20} />, 
+      label: 'Rutinas',
+      description: 'Entrenamientos'
+    },
+    { 
+      href: '/dashboard/exercises', 
+      icon: <Zap size={20} />, 
+      label: 'Ejercicios',
+      description: 'Biblioteca de ejercicios'
+    },
+    { 
+      href: '/dashboard/progress', 
+      icon: <TrendingUp size={20} />, 
+      label: 'Progreso',
+      description: 'Seguimiento'
+    },
+    { 
+      href: '/dashboard/profile', 
+      icon: <User size={20} />, 
+      label: 'Perfil',
+      description: 'Información personal'
+    },
+  ]
+
+  const navigation = isAdmin ? adminNavigation : (isTrainer ? trainerNavigation : clientNavigation)
 
   const isActive = (href: string) => {
+    if (!pathname) return false
     if (href === '/dashboard' || href === '/dashboard/trainer') {
       return pathname === href
     }
@@ -169,6 +232,9 @@ export default function MobileSidebar({ isOpen, onClose, userRole = 'CLIENT' }: 
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside)
       document.body.style.overflow = 'hidden'
+      previouslyFocused.current = document.activeElement as HTMLElement
+      // Focus close button for accessibility
+      requestAnimationFrame(() => closeBtnRef.current?.focus())
     } else {
       document.body.style.overflow = 'unset'
     }
@@ -176,6 +242,9 @@ export default function MobileSidebar({ isOpen, onClose, userRole = 'CLIENT' }: 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
       document.body.style.overflow = 'unset'
+      if (previouslyFocused.current) {
+        previouslyFocused.current.focus()
+      }
     }
   }, [isOpen, onClose])
 
@@ -213,7 +282,7 @@ export default function MobileSidebar({ isOpen, onClose, userRole = 'CLIENT' }: 
       {/* Sidebar */}
       <div 
         ref={sidebarRef}
-        className={`fixed inset-y-0 left-0 z-50 w-80 bg-white shadow-2xl transform transition-transform duration-300 ease-out lg:hidden ${
+        className={`fixed inset-y-0 left-0 z-50 w-80 bg-white dark:bg-gray-900 shadow-2xl transform transition-transform duration-300 ease-out lg:hidden ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
         onTouchStart={handleTouchStart}
@@ -224,57 +293,68 @@ export default function MobileSidebar({ isOpen, onClose, userRole = 'CLIENT' }: 
         aria-label="Menú de navegación"
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-100">
+        <div className="flex items-center justify-between p-6 border-b border-gray-100/50 dark:border-gray-800/50 bg-gradient-to-r from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/50">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-br from-primary to-blue-600 rounded-xl">
+            <div className="p-3 bg-gradient-to-br from-primary via-blue-500 to-purple-600 rounded-2xl shadow-lg animate-pulse">
               <Dumbbell className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">Kairos</h1>
+              <h1 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-200 bg-clip-text text-transparent">Kairos</h1>
               {isTrainer && (
-                <Badge variant="secondary" className="text-xs mt-1">PRO</Badge>
+                <Badge variant="default" className="text-xs mt-1 bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-semibold shadow-md">PRO</Badge>
               )}
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg"
-            aria-label="Cerrar menú"
-          >
-            <X size={20} />
-          </Button>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all duration-300 hover:scale-110 active:scale-95"
+              aria-label="Cerrar menú"
+              ref={closeBtnRef}
+            >
+              <X size={20} />
+            </Button>
+          </div>
         </div>
 
         {/* User info */}
-        <div className="p-6 bg-gradient-to-r from-primary/5 to-blue-50 border-b border-gray-100">
+        <div className="p-6 bg-gradient-to-br from-primary/5 via-blue-50/50 to-purple-50/30 dark:from-primary/10 dark:via-blue-950/30 dark:to-purple-950/20 border-b border-gray-100/50 dark:border-gray-800/50">
           <div className="flex items-center gap-4">
-            <Avatar className="h-12 w-12 ring-2 ring-primary/20">
-              <AvatarImage src={session?.user?.image || ''} />
-              <AvatarFallback className="bg-gradient-to-br from-primary to-blue-600 text-white font-semibold">
-                {session?.user?.name?.[0]?.toUpperCase() || 'U'}
-              </AvatarFallback>
-            </Avatar>
+            <div className="relative">
+              <Avatar className="h-14 w-14 ring-4 ring-primary/20 shadow-xl">
+                <AvatarImage src={session?.user?.image || ''} />
+                <AvatarFallback className="bg-gradient-to-br from-primary via-blue-500 to-purple-600 text-white font-bold text-lg">
+                  {session?.user?.name?.[0]?.toUpperCase() || 'U'}
+                </AvatarFallback>
+              </Avatar>
+              <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full animate-pulse" />
+            </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-900 truncate">
+              <p className="text-base font-bold text-gray-900 dark:text-white truncate">
                 {session?.user?.name || 'Usuario'}
               </p>
-              <p className="text-xs text-gray-500 truncate">
+              <p className="text-sm text-gray-600 dark:text-gray-300 truncate mb-2">
                 {session?.user?.email}
               </p>
               <Badge 
                 variant={isTrainer ? 'default' : 'secondary'} 
-                className="text-xs mt-1"
+                className={`text-xs font-semibold shadow-md ${
+                  isTrainer 
+                    ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-white' 
+                    : 'bg-gradient-to-r from-blue-500 to-purple-600 text-white'
+                }`}
               >
-                {isTrainer ? 'Entrenador' : 'Cliente'}
+                {isTrainer ? '👨‍💼 Entrenador' : '🏃‍♂️ Cliente'}
               </Badge>
             </div>
           </div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto py-4" role="navigation">
+        <nav className="flex-1 overflow-y-auto py-4 dark:bg-gray-900" role="navigation">
           <div className="px-4 space-y-1">
             {navigation.map((item) => {
               const active = isActive(item.href)
@@ -283,43 +363,52 @@ export default function MobileSidebar({ isOpen, onClose, userRole = 'CLIENT' }: 
                   key={item.href}
                   href={item.href}
                   onClick={handleNavClick}
-                  className={`group flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] ${
+                  className={`group flex items-center gap-4 px-4 py-4 rounded-2xl text-sm font-medium transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] relative overflow-hidden ${
                     active
-                      ? 'bg-gradient-to-r from-primary to-blue-600 text-white shadow-lg shadow-primary/25'
-                      : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                      ? 'bg-gradient-to-r from-primary via-blue-500 to-purple-600 text-white shadow-2xl shadow-primary/30 dark:shadow-primary/20'
+                      : 'text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50/50 hover:text-gray-900 dark:text-gray-200 dark:hover:bg-gradient-to-r dark:hover:from-gray-800 dark:hover:to-gray-700 dark:hover:text-white hover:shadow-lg'
                   }`}
                   aria-current={active ? 'page' : undefined}
                 >
-                  <div className={`flex-shrink-0 transition-transform duration-200 ${
-                    active ? 'scale-110' : 'group-hover:scale-105'
+                  {active && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent animate-pulse" />
+                  )}
+                  <div className={`flex-shrink-0 transition-all duration-300 relative z-10 ${
+                    active ? 'scale-110 rotate-3' : 'group-hover:scale-110 group-hover:rotate-2'
                   }`}>
-                    {item.icon}
+                    <div className={`p-2 rounded-xl transition-all duration-300 ${
+                      active 
+                        ? 'bg-white/20 shadow-lg' 
+                        : 'bg-gray-100/50 group-hover:bg-white/80 dark:bg-gray-700/50 dark:group-hover:bg-gray-600'
+                    }`}>
+                      {item.icon}
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 relative z-10">
                     <div className="flex items-center justify-between">
-                      <span className="truncate">{item.label}</span>
+                      <span className="truncate font-semibold">{item.label}</span>
                       {item.badge && item.badge > 0 && (
                         <Badge 
                           variant={active ? 'secondary' : 'destructive'}
-                          className="ml-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                          className="ml-2 h-6 w-6 flex items-center justify-center p-0 text-xs font-bold shadow-lg animate-bounce"
                         >
                           {item.badge > 99 ? '99+' : item.badge}
                         </Badge>
                       )}
                     </div>
                     {item.description && (
-                      <p className={`text-xs mt-0.5 truncate ${
-                        active ? 'text-white/80' : 'text-gray-500'
+                      <p className={`text-xs mt-1 truncate transition-all duration-300 ${
+                        active ? 'text-white/90' : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300'
                       }`}>
                         {item.description}
                       </p>
                     )}
                   </div>
                   <ChevronRight 
-                    size={16} 
-                    className={`flex-shrink-0 transition-transform duration-200 ${
-                      active ? 'text-white/80' : 'text-gray-400 group-hover:text-gray-600'
-                    } group-hover:translate-x-1`} 
+                    size={18} 
+                    className={`flex-shrink-0 transition-all duration-300 relative z-10 ${
+                      active ? 'text-white/90 translate-x-1' : 'text-gray-400 group-hover:text-gray-600 dark:text-gray-500 dark:group-hover:text-gray-300'
+                    } group-hover:translate-x-2 group-hover:scale-110`} 
                   />
                 </Link>
               )
@@ -328,21 +417,23 @@ export default function MobileSidebar({ isOpen, onClose, userRole = 'CLIENT' }: 
         </nav>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-100">
+        <div className="p-4 border-t border-gray-100/50 dark:border-gray-800/50 bg-gradient-to-r from-gray-50/50 to-white dark:from-gray-800/50 dark:to-gray-900">
           <Button
             onClick={handleSignOut}
             variant="ghost"
-            className="w-full justify-start gap-3 px-4 py-3 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all duration-200"
+            className="w-full justify-start gap-4 px-4 py-4 text-red-600 hover:text-white hover:bg-gradient-to-r hover:from-red-500 hover:to-red-600 dark:text-red-400 dark:hover:text-white dark:hover:bg-gradient-to-r dark:hover:from-red-600 dark:hover:to-red-700 rounded-2xl transition-all duration-300 hover:scale-105 active:scale-95 hover:shadow-xl group"
           >
-            <LogOut size={20} />
-            <span className="font-medium">Cerrar Sesión</span>
+            <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-xl group-hover:bg-white/20 transition-all duration-300">
+              <LogOut size={20} />
+            </div>
+            <span className="font-semibold">Cerrar Sesión</span>
           </Button>
         </div>
 
         {/* Swipe indicator */}
         <div className="absolute top-1/2 -right-3 transform -translate-y-1/2">
-          <div className="w-6 h-12 bg-white/80 backdrop-blur-sm rounded-r-lg shadow-lg flex items-center justify-center">
-            <div className="w-1 h-6 bg-gray-300 rounded-full" />
+          <div className="w-6 h-12 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-r-lg shadow-lg flex items-center justify-center">
+            <div className="w-1 h-6 bg-gray-300 dark:bg-gray-600 rounded-full" />
           </div>
         </div>
       </div>

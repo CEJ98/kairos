@@ -8,8 +8,8 @@ async function fixDemoPassword() {
   try {
     console.log('🔧 Actualizando contraseña del usuario demo...')
     
-    // Hash de la contraseña demo123
-    const hashedPassword = await hash('demo123', 12)
+    // Hash de la contraseña demo1234
+    const hashedPassword = await hash('demo1234', 12)
     
     // Actualizar contraseña del usuario demo
     const updatedUser = await prisma.user.update({
@@ -21,7 +21,7 @@ async function fixDemoPassword() {
     
     // Verificar que la contraseña funciona
     const { compare } = require('bcryptjs')
-    const isValid = await compare('demo123', updatedUser.password)
+    const isValid = await compare('demo1234', updatedUser.password)
     console.log('🔐 Verificación de contraseña:', isValid ? '✅ Válida' : '❌ Inválida')
     
   } catch (error) {

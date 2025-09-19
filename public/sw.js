@@ -335,12 +335,12 @@ self.addEventListener('push', event => {
         {
           action: 'view',
           title: 'Ver',
-          icon: '/icons/action-view.png'
+          icon: '/icons/action-view.svg'
         },
         {
           action: 'dismiss',
           title: 'Cerrar',
-          icon: '/icons/action-dismiss.png'
+          icon: '/icons/action-dismiss.svg'
         }
       ],
       data: {

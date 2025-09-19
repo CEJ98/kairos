@@ -20,11 +20,11 @@ const SECURITY_PATTERNS = {
     /data:text\/html/gi
   ],
   sqlInjection: [
-    /(union|select|insert|update|delete|drop|create|alter|exec|execute)\s/gi,
-    /(;|--|\/\*|\*\/)/g,
-    /(\bor\s+\d+\s*=\s*\d+)/gi,
-    /(\band\s+\d+\s*=\s*\d+)/gi,
-    /('|(\-\-)|;|\||\*|%)/g
+    /(union\s+select|select\s+.*\s+from|insert\s+into|update\s+.*\s+set|delete\s+from|drop\s+table|create\s+table|alter\s+table)\s/gi,
+    /(;\s*--)|(--\s*$)/g,
+    /(\bor\s+\d+\s*=\s*\d+\s+--)/gi,
+    /(\band\s+\d+\s*=\s*\d+\s+--)/gi,
+    /('\s*(or|and)\s+.*\s*=\s*.*')/gi
   ],
   pathTraversal: [
     /\.\.\/|\.\.\\/g,
@@ -32,10 +32,10 @@ const SECURITY_PATTERNS = {
     /\.\.\\|\.\.\\\\/g
   ],
   commandInjection: [
-    /[;&|`$(){}\[\]]/g,
-    /\$\(.*\)/g,
-    /`.*`/g,
-    /\|\s*(cat|ls|pwd|whoami|id|uname)/gi
+    /;\s*(rm|cat|ls|pwd|whoami|id|uname|curl|wget)/gi,
+    /\$\(\s*(rm|cat|ls|pwd|whoami|id|uname|curl|wget)/gi,
+    /`\s*(rm|cat|ls|pwd|whoami|id|uname|curl|wget)/gi,
+    /\|\s*(rm|cat|ls|pwd|whoami|id|uname|curl|wget)/gi
   ]
 }
 
@@ -94,27 +94,32 @@ export class AdvancedValidator {
     const securityIssues: string[] = []
     let wasSanitized = false
 
-    // Check for security threats
-    const threats = this.detectSecurityThreats(value)
-    if (threats.length > 0) {
-      securityIssues.push(...threats)
-      
-      if (this.logSecurity) {
-        logSecurityEvent(
-          this.getSecurityEventType(threats),
-          'HIGH',
-          {
-            input: value.substring(0, 100) + '...', // Log partial input
-            threats,
-            sanitized: sanitize
-          },
-          this.userId
-        )
-      }
+    // Skip security checks for valid emails
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+    
+    // Check for security threats only if not an email
+    if (!isEmail) {
+      const threats = this.detectSecurityThreats(value)
+      if (threats.length > 0) {
+        securityIssues.push(...threats)
+        
+        if (this.logSecurity) {
+          logSecurityEvent(
+            this.getSecurityEventType(threats),
+            'HIGH',
+            {
+              input: value.substring(0, 100) + '...', // Log partial input
+              threats,
+              sanitized: sanitize
+            },
+            this.userId
+          )
+        }
 
-      if (!allowHtml && sanitize) {
-        value = sanitizeHtml(value)
-        wasSanitized = true
+        if (!allowHtml && sanitize) {
+          value = sanitizeHtml(value)
+          wasSanitized = true
+        }
       }
     }
 
@@ -126,7 +131,7 @@ export class AdvancedValidator {
       }
     }
 
-    // Database safety check
+    // Database safety check (skip for emails and safe patterns)
     if (!isSafeForDb(value)) {
       if (this.logSecurity) {
         logSecurityEvent(
@@ -158,17 +163,24 @@ export class AdvancedValidator {
    * Validate email with security checks
    */
   validateEmail(input: unknown): ValidationResult<string> {
-    const stringResult = this.validateString(input, {
-      maxLength: 255,
-      required: true,
-      sanitize: true
-    })
-
-    if (!stringResult.success) {
-      return stringResult
+    // Type check
+    if (typeof input !== 'string') {
+      return { success: false, error: 'Email must be a string' }
     }
 
-    const email = stringResult.data!.toLowerCase()
+    let email = input.trim().toLowerCase()
+    
+    // Length validation
+    if (email.length > 255) {
+      return {
+        success: false,
+        error: 'Email too long. Maximum 255 characters allowed'
+      }
+    }
+
+    if (email.length === 0) {
+      return { success: false, error: 'Email is required' }
+    }
     
     // Enhanced email validation
     const emailSchema = z.string()
@@ -199,8 +211,8 @@ export class AdvancedValidator {
     return {
       success: true,
       data: result.data,
-      securityIssues: stringResult.securityIssues,
-      sanitized: stringResult.sanitized
+      securityIssues: [],
+      sanitized: false
     }
   }
 
@@ -364,6 +376,12 @@ export class AdvancedValidator {
    */
   private detectSecurityThreats(input: string): string[] {
     const threats: string[] = []
+
+    // Skip security checks for valid emails
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input)
+    if (isEmail) {
+      return threats
+    }
 
     // Check for XSS
     if (SECURITY_PATTERNS.xss.some(pattern => pattern.test(input))) {

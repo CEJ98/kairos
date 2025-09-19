@@ -407,25 +407,37 @@ export default function WorkoutRecommendations({ userId }: { userId?: string }) 
 export function useAIRecommendations(userId?: string) {
 	const [recommendations, setRecommendations] = useState<WorkoutRecommendation[]>([])
 	const [isLoading, setIsLoading] = useState(false)
+	const [error, setError] = useState<string | null>(null)
 
 	const generateRecommendations = async (userProfile: UserProfile) => {
 		setIsLoading(true)
+		setError(null)
 		try {
-			// En una implementación real, aquí se haría la llamada a la API de IA
-			// const response = await fetch('/api/ai/recommendations', {
-			//   method: 'POST',
-			//   headers: { 'Content-Type': 'application/json' },
-			//   body: JSON.stringify({ userId, userProfile })
-			// })
-			// const data = await response.json()
+			const response = await fetch('/api/ai/recommendations', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ 
+					userProfile,
+					limit: 3 
+				})
+			})
+
+			if (!response.ok) {
+				const errorData = await response.json()
+				throw new Error(errorData.error || 'Error al generar recomendaciones')
+			}
+
+			const data = await response.json()
+			setRecommendations(data.recommendations || [])
+			return data.recommendations || []
+		} catch (error) {
+			const errorMessage = error instanceof Error ? error.message : 'Error desconocido'
+			setError(errorMessage)
+			logger.error('Error generating recommendations:', error)
 			
-			// Simulación
-			await new Promise(resolve => setTimeout(resolve, 1500))
+			// Fallback a recomendaciones mock en caso de error
 			setRecommendations(mockRecommendations)
 			return mockRecommendations
-		} catch (error) {
-			logger.error('Error generating recommendations:', error)
-			throw error
 		} finally {
 			setIsLoading(false)
 		}
@@ -434,6 +446,7 @@ export function useAIRecommendations(userId?: string) {
 	return {
 		recommendations,
 		generateRecommendations,
-		isLoading
+		isLoading,
+		error
 	}
 }

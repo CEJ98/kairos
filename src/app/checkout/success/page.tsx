@@ -21,17 +21,17 @@ import { toast } from 'sonner'
 
 function CheckoutSuccessPageContent() {
 	const { data: session } = useSession()
-	const searchParams = useSearchParams()
+    const searchParams = useSearchParams()
 	const router = useRouter()
 	const [isLoading, setIsLoading] = useState(true)
 	const [subscriptionData, setSubscriptionData] = useState<any>(null)
 
-	const sessionId = searchParams.get('session_id')
-	const paymentIntent = searchParams.get('payment_intent')
+    const sessionId = searchParams?.get('session_id') || ''
+    const paymentIntent = searchParams?.get('payment_intent') || ''
 
 	useEffect(() => {
 		if (!session) {
-			router.push('/signin')
+			router.push('/es/signin')
 			return
 		}
 

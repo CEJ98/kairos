@@ -82,10 +82,10 @@ export default function PricingPage() {
 	const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly')
 
 	const handleSelectPlan = async (planType: string) => {
-		if (!session) {
-			router.push(`/signin?callbackUrl=/pricing`)
-			return
-		}
+    if (!session) {
+        router.push('/es/signin')
+        return
+    }
 
 		if (planType === 'FREE') {
 			router.push('/dashboard')
@@ -112,16 +112,12 @@ export default function PricingPage() {
 
 			if (response.ok) {
 				const { clientSecret } = await response.json()
-				// Add loading state before redirect
-				toast.success('Redirigiendo al checkout...')
 				router.push(`/checkout?client_secret=${clientSecret}&plan=${planType}`)
 			} else {
-				const errorData = await response.json().catch(() => ({}))
-				toast.error(errorData.message || 'Error al procesar la suscripción')
+				toast.error('Error al procesar la suscripción')
 			}
 		} catch (error) {
-			console.error('Subscription error:', error)
-			toast.error('Error al conectar con el servidor. Inténtalo de nuevo.')
+			toast.error('Error al conectar con el servidor')
 		} finally {
 			setIsLoading('')
 		}
@@ -174,7 +170,7 @@ export default function PricingPage() {
 				</div>
 
 				{/* Pricing Cards */}
-				<div id="pricing-content" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-6" role="tabpanel" aria-live="polite">
+				<div id="pricing-content" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-6" role="tabpanel">
 					{Object.entries(PRICING_PLANS).map(([planKey, plan]) => {
 						const planConfig = PLAN_FEATURES[planKey as keyof typeof PLAN_FEATURES]
 						const Icon = planConfig.icon

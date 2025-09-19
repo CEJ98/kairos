@@ -26,6 +26,8 @@ import {
 	BarChart3
 } from 'lucide-react'
 import Link from 'next/link'
+import { useChat } from '@/hooks/use-chat'
+import { toast } from 'sonner'
 
 interface Client {
 	id: string
@@ -50,11 +52,23 @@ interface Client {
 }
 
 export default function ClientDetailPage() {
-	const params = useParams()
+	const params = useParams() as { id?: string } | null
 	const router = useRouter()
-	const clientId = params.id as string
+	const clientId = (params?.id as string) || ''
 	const [client, setClient] = useState<Client | null>(null)
 	const [loading, setLoading] = useState(true)
+	const { startConversation } = useChat()
+
+	// Función para iniciar chat con el cliente
+	const handleStartChat = async () => {
+		if (!client) return
+		try {
+			await startConversation(client.id)
+			toast.success(`Chat iniciado con ${client.name}`)
+		} catch (error) {
+			toast.error('Error al iniciar el chat')
+		}
+	}
 
 	// Mock clients data - en producción vendría de una API
 	const mockClients: Client[] = useMemo(() => [
@@ -194,7 +208,11 @@ export default function ClientDetailPage() {
 					</div>
 				</div>
 				<div className="flex gap-2">
-					<Button variant="outline">
+					<Button 
+						variant="outline"
+						onClick={handleStartChat}
+						title={`Chatear con ${client?.name}`}
+					>
 						<MessageSquare className="h-4 w-4 mr-2" />
 						Mensaje
 					</Button>
@@ -317,7 +335,7 @@ export default function ClientDetailPage() {
 								</div>
 								<div>
 									<h3 className="font-medium">Próxima Sesión</h3>
-									<p className="text-sm text-gray-600">{client.nextSession}</p>
+									<p className="text-sm text-gray-600 dark:text-gray-400">{client.nextSession}</p>
 								</div>
 							</div>
 							<div className="flex gap-2">
@@ -360,13 +378,13 @@ export default function ClientDetailPage() {
 									<Progress value={client.progress} className="h-2" />
 								</div>
 								<div className="grid grid-cols-2 gap-4 pt-4">
-									<div className="text-center p-4 bg-gray-50 rounded-lg">
+									<div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
 										<div className="text-2xl font-bold text-blue-600">85%</div>
-										<div className="text-sm text-gray-600">Asistencia</div>
+										<div className="text-sm text-gray-600 dark:text-gray-400">Asistencia</div>
 									</div>
-									<div className="text-center p-4 bg-gray-50 rounded-lg">
+									<div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
 										<div className="text-2xl font-bold text-green-600">92%</div>
-										<div className="text-sm text-gray-600">Satisfacción</div>
+										<div className="text-sm text-gray-600 dark:text-gray-400">Satisfacción</div>
 									</div>
 								</div>
 							</div>

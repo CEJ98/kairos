@@ -126,128 +126,18 @@ export default function PrivacyPage() {
 
 					<Card>
 						<CardHeader>
-							<CardTitle className="flex items-center gap-2">
-								<Shield className="h-5 w-5" />
-								Sus Derechos (GDPR)
-							</CardTitle>
-						</CardHeader>
-						<CardContent className="space-y-4">
-							<p className="text-gray-700 mb-4">Bajo el Reglamento General de Protección de Datos (GDPR), usted tiene los siguientes derechos:</p>
-							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-								<div>
-									<h4 className="font-semibold mb-2">Derechos de Acceso</h4>
-									<ul className="text-sm text-gray-700 space-y-1">
-										<li>• Acceder a su información personal</li>
-										<li>• Conocer cómo procesamos sus datos</li>
-										<li>• Obtener una copia de sus datos</li>
-									</ul>
-								</div>
-								<div>
-									<h4 className="font-semibold mb-2">Derechos de Control</h4>
-									<ul className="text-sm text-gray-700 space-y-1">
-										<li>• Corregir datos inexactos</li>
-										<li>• Solicitar la eliminación de sus datos</li>
-										<li>• Limitar el procesamiento</li>
-									</ul>
-								</div>
-								<div>
-									<h4 className="font-semibold mb-2">Derechos de Transferencia</h4>
-									<ul className="text-sm text-gray-700 space-y-1">
-										<li>• Portabilidad de datos</li>
-										<li>• Transferir datos a otro proveedor</li>
-										<li>• Exportar sus datos personales</li>
-									</ul>
-								</div>
-								<div>
-									<h4 className="font-semibold mb-2">Derechos de Consentimiento</h4>
-									<ul className="text-sm text-gray-700 space-y-1">
-										<li>• Retirar el consentimiento</li>
-										<li>• Objetar al procesamiento</li>
-										<li>• Darse de baja del marketing</li>
-									</ul>
-								</div>
-							</div>
-							<div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-								<h4 className="font-semibold text-blue-900 mb-2">Cómo Ejercer sus Derechos</h4>
-								<p className="text-sm text-blue-800">
-									Para ejercer cualquiera de estos derechos, contáctenos en privacy@kairosfit.com. 
-									Responderemos a su solicitud dentro de 30 días calendarios.
-								</p>
-							</div>
-						</CardContent>
-					</Card>
-
-					<Card>
-						<CardHeader>
-							<CardTitle className="flex items-center gap-2">
-								<Database className="h-5 w-5" />
-								Retención de Datos
-							</CardTitle>
-						</CardHeader>
-						<CardContent className="space-y-4">
-							<p className="text-gray-700">Conservamos sus datos personales solo durante el tiempo necesario para los fines descritos en esta política:</p>
-							<div className="space-y-3">
-								<div className="flex justify-between items-center py-2 border-b border-gray-100">
-									<span className="text-sm font-medium">Datos de cuenta activa</span>
-									<span className="text-sm text-gray-600">Durante la vida de la cuenta</span>
-								</div>
-								<div className="flex justify-between items-center py-2 border-b border-gray-100">
-									<span className="text-sm font-medium">Datos de entrenamiento</span>
-									<span className="text-sm text-gray-600">3 años después del cierre</span>
-								</div>
-								<div className="flex justify-between items-center py-2 border-b border-gray-100">
-									<span className="text-sm font-medium">Datos de facturación</span>
-									<span className="text-sm text-gray-600">7 años (requisitos fiscales)</span>
-								</div>
-								<div className="flex justify-between items-center py-2 border-b border-gray-100">
-									<span className="text-sm font-medium">Datos de marketing</span>
-									<span className="text-sm text-gray-600">Hasta que se dé de baja</span>
-								</div>
-								<div className="flex justify-between items-center py-2">
-									<span className="text-sm font-medium">Logs del sistema</span>
-									<span className="text-sm text-gray-600">90 días</span>
-								</div>
-							</div>
-						</CardContent>
-					</Card>
-
-					<Card>
-						<CardHeader>
-							<CardTitle className="flex items-center gap-2">
-								<Eye className="h-5 w-5" />
-								Transferencias Internacionales
-							</CardTitle>
+							<CardTitle>Sus Derechos</CardTitle>
 						</CardHeader>
 						<CardContent>
-							<p className="text-gray-700 mb-4">
-								Algunos de nuestros proveedores de servicios pueden estar ubicados fuera del Espacio Económico Europeo (EEE). 
-								Cuando transferimos datos fuera del EEE, implementamos las siguientes salvaguardas:
-							</p>
-							<ul className="list-disc list-inside text-gray-700 space-y-2">
-								<li>Cláusulas contractuales estándar aprobadas por la Comisión Europea</li>
-								<li>Certificaciones de adecuación para países con protecciones equivalentes</li>
-								<li>Medidas técnicas adicionales para proteger los datos en tránsito</li>
-								<li>Auditorías regulares de seguridad de proveedores</li>
+							<p className="text-gray-700 mb-4">Usted tiene derecho a:</p>
+							<ul className="list-disc list-inside text-gray-700 space-y-1">
+								<li>Acceder a su información personal</li>
+								<li>Corregir datos inexactos</li>
+								<li>Solicitar la eliminación de sus datos</li>
+								<li>Limitar el procesamiento de sus datos</li>
+								<li>Portabilidad de datos</li>
+								<li>Retirar el consentimiento en cualquier momento</li>
 							</ul>
-						</CardContent>
-					</Card>
-
-					<Card>
-						<CardHeader>
-							<CardTitle className="flex items-center gap-2">
-								<Users className="h-5 w-5" />
-								Menores de Edad
-							</CardTitle>
-						</CardHeader>
-						<CardContent>
-							<p className="text-gray-700 mb-4">
-								Nuestros servicios están dirigidos a personas mayores de 18 años. No recopilamos 
-								intencionalmente información personal de menores de 18 años.
-							</p>
-							<p className="text-gray-700">
-								Si nos enteramos de que hemos recopilado información personal de un menor sin el consentimiento 
-								parental verificable, eliminaremos esa información de nuestros servidores inmediatamente.
-							</p>
 						</CardContent>
 					</Card>
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
@@ -11,10 +11,10 @@ import {
 	LineChart, Line, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
 	XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer 
 } from 'recharts'
-import { logger } from '@/lib/logger'
+import { useTrainerAnalytics } from '@/hooks/use-trainer-analytics'
 import { 
 	TrendingUp, TrendingDown, Users, Activity, Target, Calendar,
-	Clock, Zap, Award, AlertCircle, Download, Filter
+	Clock, Zap, Award, AlertCircle, Download, Filter, RefreshCw
 } from 'lucide-react'
 
 interface AnalyticsData {
@@ -88,22 +88,17 @@ const mockClientMetrics: ClientMetrics[] = [
 export default function AdvancedAnalytics() {
 	const [timeRange, setTimeRange] = useState('30d')
 	const [selectedMetric, setSelectedMetric] = useState('overview')
-	const [analyticsData, setAnalyticsData] = useState<AnalyticsData>(mockAnalyticsData)
-	const [chartData, setChartData] = useState<ChartData[]>(mockChartData)
-	const [clientMetrics, setClientMetrics] = useState<ClientMetrics[]>(mockClientMetrics)
+	const { 
+		analyticsData, 
+		chartData, 
+		clientMetrics, 
+		isLoading, 
+		error, 
+		refreshData, 
+		exportData 
+	} = useTrainerAnalytics(timeRange)
 
-	// Simular carga de datos
-	useEffect(() => {
-		// Aquí se cargarían los datos reales desde la API
-		setAnalyticsData(mockAnalyticsData)
-		setChartData(mockChartData)
-		setClientMetrics(mockClientMetrics)
-	}, [timeRange])
 
-	const exportData = () => {
-		// Implementar exportación de datos
-		logger.debug('Exporting analytics data...')
-	}
 
 	const getStatusColor = (status: string) => {
 		switch (status) {
@@ -121,6 +116,43 @@ export default function AdvancedAnalytics() {
 			case 'inactive': return 'Inactivo'
 			default: return 'Desconocido'
 		}
+	}
+
+	// Mostrar estado de carga
+	if (isLoading) {
+		return (
+			<div className="space-y-6">
+				<div className="flex items-center justify-center h-64">
+					<div className="flex items-center space-x-2">
+						<RefreshCw className="h-6 w-6 animate-spin" />
+						<span className="text-lg">Cargando analytics...</span>
+					</div>
+				</div>
+			</div>
+		)
+	}
+
+	// Mostrar estado de error
+	if (error) {
+		return (
+			<div className="space-y-6">
+				<Card>
+					<CardContent className="flex items-center justify-center h-64">
+						<div className="text-center space-y-4">
+							<AlertCircle className="h-12 w-12 text-destructive mx-auto" />
+							<div>
+								<h3 className="text-lg font-semibold">Error al cargar analytics</h3>
+								<p className="text-muted-foreground">{error}</p>
+							</div>
+							<Button onClick={refreshData} variant="outline">
+								<RefreshCw className="h-4 w-4 mr-2" />
+								Reintentar
+							</Button>
+						</div>
+					</CardContent>
+				</Card>
+			</div>
+		)
 	}
 
 	return (
@@ -143,6 +175,15 @@ export default function AdvancedAnalytics() {
 							<SelectItem value="1y" className="text-sm">1 año</SelectItem>
 						</SelectContent>
 					</Select>
+					<Button 
+						variant="outline" 
+						onClick={refreshData} 
+						className="h-9"
+						disabled={isLoading}
+					>
+						<RefreshCw className={`h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+						<span className="text-sm">Actualizar</span>
+					</Button>
 					<Button variant="outline" onClick={exportData} className="h-9">
 						<Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
 						<span className="text-sm">Exportar</span>

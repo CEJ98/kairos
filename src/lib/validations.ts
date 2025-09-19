@@ -237,6 +237,24 @@ export const createSubscriptionSchema = z.object({
   stripePriceId: z.string().min(1, 'Stripe price ID is required'),
 })
 
+// =================== CALENDAR EVENT VALIDATIONS ===================
+
+export const createCalendarEventSchema = z.object({
+  workoutId: z.string().cuid('Invalid workout ID'),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/,'Date must be YYYY-MM-DD'),
+})
+
+export const updateCalendarEventSchema = z.object({
+  id: z.string().min(1, 'Invalid session ID'),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/,'Date must be YYYY-MM-DD').optional(),
+  status: z.enum(['COMPLETED']).optional(),
+}).refine((d) => !!d.date || !!d.status, { message: 'Nothing to update' })
+
+export const calendarEventsQuerySchema = z.object({
+  start: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  end: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+})
+
 // =================== SEARCH AND FILTER VALIDATIONS ===================
 
 export const paginationSchema = z.object({
@@ -262,6 +280,39 @@ export const workoutFilterSchema = z.object({
   sortBy: z.enum(['name', 'createdAt', 'duration']).default('createdAt'),
   sortOrder: sortOrderSchema.default('desc'),
 }).merge(paginationSchema)
+
+// =================== USER SETTINGS VALIDATIONS ===================
+
+export const themeSchema = z.enum(['LIGHT', 'DARK', 'SYSTEM'])
+export const profileVisibilitySchema = z.enum(['PUBLIC', 'PRIVATE', 'FRIENDS_ONLY'])
+export const measurementUnitSchema = z.enum(['METRIC', 'IMPERIAL'])
+export const languageSchema = z.enum(['es', 'en', 'fr'])
+
+export const notificationSettingsSchema = z.object({
+  email: z.boolean().default(true),
+  push: z.boolean().default(true),
+  workoutReminders: z.boolean().default(true),
+  progressUpdates: z.boolean().default(true),
+})
+
+export const privacySettingsSchema = z.object({
+  profileVisibility: profileVisibilitySchema.default('PUBLIC'),
+  showProgress: z.boolean().default(true),
+  allowMessages: z.boolean().default(true),
+})
+
+export const preferenceSettingsSchema = z.object({
+  theme: themeSchema.default('SYSTEM'),
+  language: languageSchema.default('es'),
+  timezone: z.string().min(1, 'Timezone is required').default('America/Mexico_City'),
+  measurementUnit: measurementUnitSchema.default('METRIC'),
+})
+
+export const userSettingsSchema = z.object({
+  notifications: notificationSettingsSchema,
+  privacy: privacySettingsSchema,
+  preferences: preferenceSettingsSchema,
+})
 
 // =================== HELPER FUNCTIONS ===================
 
@@ -313,3 +364,7 @@ export type UpdateWorkoutSessionInput = z.infer<typeof updateWorkoutSessionSchem
 export type BodyMeasurementInput = z.infer<typeof bodyMeasurementSchema>
 export type ExerciseFilterInput = z.infer<typeof exerciseFilterSchema>
 export type WorkoutFilterInput = z.infer<typeof workoutFilterSchema>
+export type UserSettingsInput = z.infer<typeof userSettingsSchema>
+export type NotificationSettingsInput = z.infer<typeof notificationSettingsSchema>
+export type PrivacySettingsInput = z.infer<typeof privacySettingsSchema>
+export type PreferenceSettingsInput = z.infer<typeof preferenceSettingsSchema>

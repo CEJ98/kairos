@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { workoutPatchSchema } from '@/lib/validations/api-schemas'
 
 import { logger } from '@/lib/logger'
 // GET /api/workouts/[id] - Obtener rutina específica
@@ -217,6 +218,108 @@ export async function PUT(
 
   } catch (error) {
     logger.error('Error updating workout:', error, 'API')
+    return NextResponse.json(
+      { error: 'Error al actualizar rutina' },
+      { status: 500 }
+    )
+  }
+}
+
+// PATCH /api/workouts/[id] - Actualización parcial de rutina
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+    const session = await getServerSession(authOptions)
+    if (!session?.user) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    }
+
+    let parsed
+    try {
+      const json = await req.json()
+      parsed = workoutPatchSchema.safeParse(json)
+    } catch {
+      return NextResponse.json({ error: 'JSON inválido' }, { status: 400 })
+    }
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Validación fallida', details: parsed.error.flatten() },
+        { status: 400 }
+      )
+    }
+
+    const payload = parsed.data
+
+    const existingWorkout = await prisma.workout.findUnique({
+      where: { id },
+      include: { exercises: true }
+    })
+
+    if (!existingWorkout) {
+      return NextResponse.json(
+        { error: 'Rutina no encontrada' },
+        { status: 404 }
+      )
+    }
+
+    if (existingWorkout.creatorId !== session.user.id) {
+      return NextResponse.json(
+        { error: 'Solo el creador puede editar esta rutina' },
+        { status: 403 }
+      )
+    }
+
+    const updatedWorkout = await prisma.$transaction(async (tx) => {
+      const workout = await tx.workout.update({
+        where: { id },
+        data: {
+          ...(payload.name && { name: payload.name }),
+          ...(payload.description !== undefined && { description: payload.description }),
+          ...(payload.category && { category: payload.category }),
+          ...(payload.isTemplate !== undefined && { isTemplate: payload.isTemplate }),
+          ...(payload.isPublic !== undefined && { isPublic: payload.isPublic })
+        }
+      })
+
+      if (payload.exercises) {
+        await tx.workoutExercise.deleteMany({ where: { workoutId: id } })
+        if (payload.exercises.length > 0) {
+          await tx.workoutExercise.createMany({
+            data: payload.exercises.map((ex: any, index: number) => ({
+              workoutId: id,
+              exerciseId: ex.exerciseId,
+              order: index + 1,
+              sets: ex.sets || 3,
+              reps: ex.reps,
+              weight: ex.weight,
+              duration: ex.duration,
+              distance: ex.distance,
+              restTime: ex.restTime || 60,
+              notes: ex.notes
+            }))
+          })
+        }
+      }
+
+      return workout
+    })
+
+    const completeWorkout = await prisma.workout.findUnique({
+      where: { id },
+      include: {
+        creator: { select: { id: true, name: true, email: true } },
+        exercises: { include: { exercise: true }, orderBy: { order: 'asc' } }
+      }
+    })
+
+    return NextResponse.json(completeWorkout)
+
+  } catch (error) {
+    logger.error('Error patching workout:', error, 'API')
     return NextResponse.json(
       { error: 'Error al actualizar rutina' },
       { status: 500 }

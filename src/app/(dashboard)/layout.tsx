@@ -1,8 +1,10 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import { useState } from 'react'
 import { useSession, signOut } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { 
   Dumbbell, 
@@ -18,7 +20,8 @@ import {
   DollarSign,
   Calendar,
   Bell,
-  Search
+  Search,
+  Brain
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -26,6 +29,12 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import BottomNavigation from '@/components/ui/bottom-navigation'
 import MobileSidebar from '@/components/ui/mobile-sidebar'
 import { useResponsive } from '@/hooks/useResponsive'
+import NotificationSystem from '@/components/notifications/notification-system'
+import { NotificationsBell } from '@/components/ui/notifications'
+import { LanguageSelector } from '@/components/ui/language-selector'
+import { ThemeToggle } from '@/components/ui/theme-toggle'
+import { Breadcrumbs } from '@/components/ui/breadcrumbs'
+import { GlobalSearch } from '@/components/ui/global-search'
 
 interface SidebarItemProps {
   href: string
@@ -41,9 +50,11 @@ function SidebarItem({ href, icon, label, badge, isActive }: SidebarItemProps) {
       href={href}
       className={`group flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-[1.02] ${
         isActive
-          ? 'bg-gradient-to-r from-primary to-blue-600 text-white shadow-lg shadow-primary/25'
-          : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+          ? 'bg-gradient-to-r from-primary to-blue-600 text-white shadow-lg shadow-primary/25 dark:shadow-primary/10'
+          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
       }`}
+      aria-current={isActive ? 'page' : undefined}
+      aria-label={label}
     >
       <div className={`transition-transform duration-200 ${
         isActive ? 'scale-110' : 'group-hover:scale-105'
@@ -70,6 +81,7 @@ export default function DashboardLayout({
 }) {
   const { data: session, status } = useSession()
   const router = useRouter()
+  const pathname = usePathname() || ''
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { isMobile, isTablet } = useResponsive()
 
@@ -83,7 +95,7 @@ export default function DashboardLayout({
   }
 
   if (status === 'unauthenticated') {
-    router.push('/signin')
+    router.push('/es/signin')
     return null
   }
 
@@ -93,7 +105,7 @@ export default function DashboardLayout({
   // Navegación para clientes
   const clientNavigation = [
     { href: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
-    { href: '/dashboard/workouts', icon: <Dumbbell size={20} />, label: 'Rutinas' },
+    { href: '/workouts', icon: <Dumbbell size={20} />, label: 'Rutinas' },
     { href: '/dashboard/exercises', icon: <Zap size={20} />, label: 'Ejercicios' },
     { href: '/dashboard/progress', icon: <TrendingUp size={20} />, label: 'Progreso' },
     { href: '/dashboard/profile', icon: <User size={20} />, label: 'Perfil' },
@@ -105,25 +117,47 @@ export default function DashboardLayout({
     { href: '/dashboard/trainer', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
     { href: '/dashboard/trainer/clients', icon: <Users size={20} />, label: 'Clientes', badge: '12' },
     { href: '/dashboard/trainer/workouts', icon: <Dumbbell size={20} />, label: 'Rutinas' },
+    { href: '/dashboard/trainer/ai-workouts', icon: <Brain size={20} />, label: 'AI Workouts' },
     { href: '/dashboard/trainer/exercises', icon: <Zap size={20} />, label: 'Ejercicios' },
     { href: '/dashboard/trainer/calendar', icon: <Calendar size={20} />, label: 'Calendario' },
     { href: '/dashboard/trainer/billing', icon: <DollarSign size={20} />, label: 'Facturación' },
     { href: '/dashboard/trainer/profile', icon: <User size={20} />, label: 'Perfil' },
   ]
 
-  const navigation = isTrainer ? trainerNavigation : clientNavigation
+  // Navegación para administradores
+  const adminNavigation = [
+    { href: '/admin', icon: <Settings size={20} />, label: 'Administración' },
+    { href: '/admin/backup', icon: <Settings size={20} />, label: 'Respaldos' },
+    { href: '/admin/stripe-webhooks', icon: <Settings size={20} />, label: 'Stripe Webhooks' },
+    { href: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
+    { href: '/dashboard/workouts', icon: <Dumbbell size={20} />, label: 'Rutinas' },
+    { href: '/dashboard/exercises', icon: <Zap size={20} />, label: 'Ejercicios' },
+    { href: '/dashboard/progress', icon: <TrendingUp size={20} />, label: 'Progreso' },
+    { href: '/dashboard/profile', icon: <User size={20} />, label: 'Perfil' },
+  ]
+
+  const navigation = isAdmin ? adminNavigation : (isTrainer ? trainerNavigation : clientNavigation)
 
   const handleSignOut = async () => {
     await signOut({ callbackUrl: '/' })
   }
 
+  const isActive = (href: string) => {
+    if (href === '/dashboard' || href === '/dashboard/trainer' || href === '/admin') {
+      return pathname === href
+    }
+    return pathname.startsWith(href)
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-emerald-50/20">
+      {/* Skip to content for accessibility */}
+      <a href="#main-content" className="skip-link">Saltar al contenido</a>
       {/* Mobile Sidebar */}
       <MobileSidebar 
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
-        userRole={isTrainer ? 'TRAINER' : 'CLIENT'}
+        userRole={isAdmin ? 'ADMIN' : (isTrainer ? 'TRAINER' : 'CLIENT')}
       />
 
       {/* Desktop Sidebar */}
@@ -136,7 +170,10 @@ export default function DashboardLayout({
             </div>
             <div>
               <span className="text-xl font-bold text-gray-900">Kairos</span>
-              {isTrainer && (
+              {isAdmin && (
+                <Badge variant="destructive" className="text-xs ml-2">ADMIN</Badge>
+              )}
+              {isTrainer && !isAdmin && (
                 <Badge variant="secondary" className="text-xs ml-2">PRO</Badge>
               )}
             </div>
@@ -168,6 +205,13 @@ export default function DashboardLayout({
             </div>
           </div>
 
+          {/* Search */}
+          <div className="px-4 py-3 border-b border-gray-100">
+            <GlobalSearch 
+              userRole={isAdmin ? 'ADMIN' : (isTrainer ? 'TRAINER' : 'CLIENT')} 
+            />
+          </div>
+
           {/* Navigation */}
           <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
             {navigation.map((item) => (
@@ -177,7 +221,7 @@ export default function DashboardLayout({
                 icon={item.icon}
                 label={item.label}
                 badge={(item as any).badge}
-                isActive={false} // TODO: Implementar lógica de ruta activa
+                isActive={isActive(item.href)}
               />
             ))}
 
@@ -186,11 +230,37 @@ export default function DashboardLayout({
               <div className="border-t border-gray-200" />
             </div>
 
+            {/* Notifications */}
+            <div className="px-3 py-2">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Notificaciones</span>
+                <NotificationsBell />
+              </div>
+              <NotificationSystem className="w-full" />
+            </div>
+            
+            <div className="py-2">
+              <div className="border-t border-gray-200" />
+            </div>
+            
+            {/* Language Selector */}
+            <div className="px-3 py-2">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Idioma</span>
+              </div>
+              <LanguageSelector />
+            </div>
+            
+            <div className="py-2">
+              <div className="border-t border-gray-200" />
+            </div>
+            
             {/* Settings & Logout */}
             <SidebarItem
               href="/dashboard/settings"
               icon={<Settings size={20} />}
               label="Configuración"
+              isActive={isActive('/dashboard/settings')}
             />
             
             <button
@@ -226,11 +296,11 @@ export default function DashboardLayout({
       {/* Main content */}
       <div className="lg:pl-72">
         {/* Mobile header */}
-        <header className="lg:hidden bg-white/95 backdrop-blur-xl border-b border-gray-200/50 shadow-sm sticky top-0 z-30">
+        <header className="lg:hidden bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-800/50 shadow-sm sticky top-0 z-30">
           <div className="flex items-center justify-between px-4 py-3">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="p-2 rounded-xl text-gray-600 hover:bg-gray-100 transition-colors touch-target"
+              className="p-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors touch-target"
               aria-label="Abrir menú"
             >
               <Menu size={22} />
@@ -240,20 +310,20 @@ export default function DashboardLayout({
               <div className="p-1.5 bg-gradient-to-br from-primary to-blue-600 rounded-lg">
                 <Dumbbell className="h-5 w-5 text-white" />
               </div>
-              <span className="text-lg font-bold text-gray-900">Kairos</span>
+              <span className="text-lg font-bold text-gray-900 dark:text-white">Kairos</span>
               {isTrainer && (
                 <Badge variant="secondary" className="text-xs">PRO</Badge>
               )}
             </div>
             
             <div className="flex items-center gap-2">
-              <button 
-                className="p-2 rounded-xl text-gray-600 hover:bg-gray-100 transition-colors touch-target relative"
-                aria-label="Notificaciones"
-              >
-                <Bell size={20} />
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
-              </button>
+              <GlobalSearch 
+                className="hidden sm:block" 
+                userRole={isAdmin ? 'ADMIN' : (isTrainer ? 'TRAINER' : 'CLIENT')} 
+              />
+              <LanguageSelector />
+              <ThemeToggle />
+              <NotificationsBell />
               <Avatar className="h-8 w-8">
                 <AvatarImage src={session?.user?.image || ''} />
                 <AvatarFallback className="bg-gradient-to-br from-primary to-blue-600 text-white text-xs font-semibold">
@@ -265,8 +335,12 @@ export default function DashboardLayout({
         </header>
 
         {/* Page content */}
-        <main className="min-h-screen pb-20 lg:pb-8">
+        <main id="main-content" className="min-h-screen pb-20 lg:pb-8">
           <div className="mobile-padding py-4 lg:py-6">
+            {/* Breadcrumbs */}
+            <div className="mb-6 px-2">
+              <Breadcrumbs className="text-sm" />
+            </div>
             {children}
           </div>
         </main>

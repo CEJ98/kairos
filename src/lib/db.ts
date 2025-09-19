@@ -1,6 +1,11 @@
 import { PrismaClient } from '@prisma/client'
 import { createPerformanceMiddleware, dbMonitor } from './db-monitor'
 
+// Verificar que estamos en el servidor
+if (typeof window !== 'undefined') {
+  throw new Error('PrismaClient is not supported in the browser environment')
+}
+
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }

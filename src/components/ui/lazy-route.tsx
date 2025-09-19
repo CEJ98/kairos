@@ -4,7 +4,6 @@ import { Suspense, lazy, ComponentType, ReactNode } from 'react'
 import { LoadingSpinner } from './lazy-loader'
 import { ErrorBoundary } from 'react-error-boundary'
 
-import { logger } from '@/lib/logger'
 interface LazyRouteProps {
 	importFn: () => Promise<{ default: ComponentType<any> }>
 	loadingMessage?: string
@@ -79,7 +78,7 @@ export const LazyRoute = ({
 }: LazyRouteProps) => {
 	// Precargar el componente si se especifica
 	if (preload && typeof window !== 'undefined') {
-		importFn().catch(logger.error)
+		importFn().catch(console.error)
 	}
 
 	const LazyComponent = lazy(importFn)
@@ -124,14 +123,14 @@ export const lazyRoutes = {
 export const useRoutePreloader = () => {
 	const preloadRoute = (routeKey: keyof typeof lazyRoutes) => {
 		if (typeof window !== 'undefined') {
-			lazyRoutes[routeKey]().catch(logger.error)
+			lazyRoutes[routeKey]().catch(console.error)
 		}
 	}
 
 	const preloadRoutes = (routeKeys: (keyof typeof lazyRoutes)[]) => {
 		if (typeof window !== 'undefined') {
 			routeKeys.forEach(key => {
-				lazyRoutes[key]().catch(logger.error)
+				lazyRoutes[key]().catch(console.error)
 			})
 		}
 	}

@@ -7,7 +7,6 @@ import {
   resolveSecurityEvent,
   detectSuspiciousActivity 
 } from '@/lib/security-audit'
-import { logger } from '@/lib/logger'
 import { getCSRFStats } from '@/lib/csrf-protection'
 import { withRateLimit, RATE_LIMIT_CONFIGS } from '@/lib/rate-limiter'
 import { applySecurityHeaders } from '@/lib/security-headers'
@@ -77,7 +76,7 @@ export async function GET(req: NextRequest) {
     return applySecurityHeaders(response)
     
   } catch (error) {
-    logger.error('Error fetching security data:', error, 'API')
+    console.error('Error fetching security data:', error)
     
     const response = NextResponse.json(
       { error: 'Internal server error' },
@@ -196,7 +195,7 @@ export async function POST(req: NextRequest) {
     return applySecurityHeaders(response)
     
   } catch (error) {
-    logger.error('Error processing security action:', error, 'API')
+    console.error('Error processing security action:', error)
     
     const response = NextResponse.json(
       { error: 'Internal server error' },

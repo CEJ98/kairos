@@ -20,8 +20,8 @@ async function setupDemoUser() {
     
     console.log('🔨 Creando usuario demo...')
     
-    // Hash de la contraseña demo123
-    const hashedPassword = await hash('demo123', 12)
+    // Hash de la contraseña demo1234
+    const hashedPassword = await hash('demo1234', 12)
     
     // Crear usuario demo
     const demoUser = await prisma.user.create({

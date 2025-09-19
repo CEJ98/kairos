@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
+import { exerciseSchema, type ExerciseFormData as ExerciseValidationData, exerciseValidationUtils } from '@/lib/validations/exercise'
 import { 
   Search, 
   Plus, 
@@ -50,19 +53,7 @@ interface Exercise {
   updatedAt: string
 }
 
-interface ExerciseFormData {
-  name: string
-  description: string
-  category: string
-  muscleGroups: string[]
-  equipments: string[]
-  difficulty: string
-  instructions: string
-  tips: string
-  imageUrl: string
-  videoUrl: string
-  gifUrl: string
-}
+// ExerciseFormData type is now imported from validations/exercise.ts as ExerciseValidationData
 
 const categories = [
   { value: 'all', label: 'Todas las categorías' },
@@ -107,19 +98,7 @@ export default function ExercisesPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null)
-  const [formData, setFormData] = useState<ExerciseFormData>({
-    name: '',
-    description: '',
-    category: 'STRENGTH',
-    muscleGroups: [],
-    equipments: [],
-    difficulty: 'BEGINNER',
-    instructions: '',
-    tips: '',
-    imageUrl: '',
-    videoUrl: '',
-    gifUrl: ''
-  })
+  // Form data is now managed by react-hook-form in ExerciseForm component
   const [submitting, setSubmitting] = useState(false)
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -167,7 +146,7 @@ export default function ExercisesPage() {
     fetchExercises()
   }, [fetchExercises])
 
-  const handleCreateExercise = async () => {
+  const handleCreateExercise = async (data: ExerciseValidationData) => {
     try {
       setSubmitting(true)
       const response = await fetch('/api/exercises', {
@@ -175,13 +154,12 @@ export default function ExercisesPage() {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(data)
       })
 
       if (response.ok) {
         toast.success('Ejercicio creado exitosamente')
         setIsCreateDialogOpen(false)
-        resetForm()
         fetchExercises()
       } else {
         const error = await response.json()
@@ -194,7 +172,7 @@ export default function ExercisesPage() {
     }
   }
 
-  const handleEditExercise = async () => {
+  const handleEditExercise = async (data: ExerciseValidationData) => {
     if (!selectedExercise) return
 
     try {
@@ -204,14 +182,13 @@ export default function ExercisesPage() {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(data)
       })
 
       if (response.ok) {
         toast.success('Ejercicio actualizado exitosamente')
         setIsEditDialogOpen(false)
         setSelectedExercise(null)
-        resetForm()
         fetchExercises()
       } else {
         const error = await response.json()
@@ -246,19 +223,6 @@ export default function ExercisesPage() {
 
   const openEditDialog = (exercise: Exercise) => {
     setSelectedExercise(exercise)
-    setFormData({
-      name: exercise.name,
-      description: exercise.description || '',
-      category: exercise.category,
-      muscleGroups: exercise.muscleGroups,
-      equipments: exercise.equipments,
-      difficulty: exercise.difficulty,
-      instructions: exercise.instructions || '',
-      tips: exercise.tips || '',
-      imageUrl: exercise.imageUrl || '',
-      videoUrl: exercise.videoUrl || '',
-      gifUrl: exercise.gifUrl || ''
-    })
     setIsEditDialogOpen(true)
   }
 
@@ -267,21 +231,7 @@ export default function ExercisesPage() {
     setIsViewDialogOpen(true)
   }
 
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      description: '',
-      category: 'STRENGTH',
-      muscleGroups: [],
-      equipments: [],
-      difficulty: 'BEGINNER',
-      instructions: '',
-      tips: '',
-      imageUrl: '',
-      videoUrl: '',
-      gifUrl: ''
-    })
-  }
+  // resetForm function removed - form reset is handled by react-hook-form
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -306,7 +256,7 @@ export default function ExercisesPage() {
   const canEditExercises = session?.user?.role === 'TRAINER' || session?.user?.role === 'ADMIN'
 
   return (
-    <div className="mobile-gap-y">
+    <div className="page-container mobile-gap-y">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mobile-gap">
         <div className="min-w-0">
@@ -326,8 +276,6 @@ export default function ExercisesPage() {
                 <DialogTitle>Crear Nuevo Ejercicio</DialogTitle>
               </DialogHeader>
               <ExerciseForm 
-                formData={formData}
-                setFormData={setFormData}
                 onSubmit={handleCreateExercise}
                 submitting={submitting}
                 isEdit={false}
@@ -421,7 +369,7 @@ export default function ExercisesPage() {
           <Loader2 className="h-8 w-8 animate-spin text-green-600" />
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 mobile-gap">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 mobile-gap content-visibility-auto">
           {exercises.map((exercise) => (
             <Card key={exercise.id} className="hover:shadow-lg transition-shadow mobile-card">
               <CardHeader className="pb-2 sm:pb-3">
@@ -496,7 +444,7 @@ export default function ExercisesPage() {
                 <div className="flex items-center mobile-gap responsive-caption text-gray-500">
                   {exercise.imageUrl && (
                     <div className="flex items-center gap-1">
-                      <Image className="h-3 w-3" />
+                      <Image className="h-3 w-3" aria-hidden="true" />
                       <span className="hidden sm:inline">Imagen</span>
                     </div>
                   )}
@@ -542,12 +490,24 @@ export default function ExercisesPage() {
             <DialogTitle>Editar Ejercicio</DialogTitle>
           </DialogHeader>
           <ExerciseForm 
-            formData={formData}
-            setFormData={setFormData}
-            onSubmit={handleEditExercise}
-            submitting={submitting}
-            isEdit={true}
-          />
+                initialData={selectedExercise ? {
+                  name: selectedExercise.name,
+                  description: selectedExercise.description || '',
+                  category: selectedExercise.category as any,
+                  muscleGroups: selectedExercise.muscleGroups as any,
+                  equipments: selectedExercise.equipments as any,
+                  difficulty: selectedExercise.difficulty as any,
+                  instructions: selectedExercise.instructions || '',
+                  tips: selectedExercise.tips || '',
+                  imageUrl: selectedExercise.imageUrl || '',
+                  videoUrl: selectedExercise.videoUrl || '',
+                  gifUrl: selectedExercise.gifUrl || '',
+                  isPublic: true
+                } : undefined}
+                onSubmit={handleEditExercise}
+                submitting={submitting}
+                isEdit={true}
+              />
         </DialogContent>
       </Dialog>
 
@@ -568,34 +528,66 @@ export default function ExercisesPage() {
 
 // Exercise Form Component
 interface ExerciseFormProps {
-  formData: ExerciseFormData
-  setFormData: (data: ExerciseFormData) => void
-  onSubmit: () => void
+  initialData?: ExerciseValidationData
+  onSubmit: (data: ExerciseValidationData) => Promise<void>
   submitting: boolean
   isEdit: boolean
 }
 
-function ExerciseForm({ formData, setFormData, onSubmit, submitting, isEdit }: ExerciseFormProps) {
+function ExerciseForm({ initialData, onSubmit, submitting, isEdit }: ExerciseFormProps) {
+  const form = useForm<ExerciseValidationData>({
+    resolver: zodResolver(exerciseSchema),
+    defaultValues: initialData || {
+      name: '',
+      description: '',
+      category: 'STRENGTH',
+      difficulty: 'BEGINNER',
+      duration: 30,
+      calories: 100,
+      equipment: '',
+      instructions: '',
+      tips: '',
+      videoUrl: '',
+      imageUrl: '',
+      gifUrl: '',
+      muscleGroups: [],
+      equipments: [],
+      tags: []
+    }
+  })
+
+  const handleFormSubmit = async (data: ExerciseValidationData) => {
+    try {
+      const sanitizedData = exerciseValidationUtils.sanitizeFormData(data)
+      await onSubmit(sanitizedData)
+      if (!isEdit) {
+        form.reset()
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error)
+      toast.error('Error al guardar el ejercicio')
+    }
+  }
+
   const handleMuscleGroupToggle = (group: string) => {
-    const newGroups = formData.muscleGroups.includes(group)
-      ? formData.muscleGroups.filter(g => g !== group)
-      : [...formData.muscleGroups, group]
-    setFormData({ ...formData, muscleGroups: newGroups })
+    const currentGroups = form.getValues('muscleGroups') || []
+    const newGroups = currentGroups.includes(group as any)
+      ? currentGroups.filter(g => g !== group)
+      : [...currentGroups, group as any]
+    form.setValue('muscleGroups', newGroups)
   }
 
   const handleEquipmentToggle = (equipment: string) => {
-    const newEquipments = formData.equipments.includes(equipment)
-      ? formData.equipments.filter(e => e !== equipment)
-      : [...formData.equipments, equipment]
-    setFormData({ ...formData, equipments: newEquipments })
+    const currentEquipments = form.getValues('equipments') || []
+    const newEquipments = currentEquipments.includes(equipment as any)
+      ? currentEquipments.filter(e => e !== equipment)
+      : [...currentEquipments, equipment as any]
+    form.setValue('equipments', newEquipments)
   }
 
   return (
     <form 
-      onSubmit={(e) => {
-        e.preventDefault()
-        onSubmit()
-      }}
+      onSubmit={form.handleSubmit(handleFormSubmit)}
       className="space-y-6"
       role="form"
       aria-label={isEdit ? "Editar ejercicio" : "Crear nuevo ejercicio"}
@@ -607,35 +599,28 @@ function ExerciseForm({ formData, setFormData, onSubmit, submitting, isEdit }: E
           <Label htmlFor="name">Nombre *</Label>
           <Input
             id="name"
-            value={formData.name}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, name: e.target.value })}
+            {...form.register('name')}
             placeholder="Nombre del ejercicio"
-            required
             aria-required="true"
-            aria-describedby="name-error"
-            aria-invalid={!formData.name ? "true" : "false"}
             autoComplete="off"
             className="focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           />
-          {!formData.name && (
-            <div id="name-error" className="text-sm text-red-600" role="alert">
+          {form.formState.errors.name && (
+            <div className="text-sm text-red-600" role="alert">
               <span className="sr-only">Error: </span>
-              El nombre del ejercicio es requerido
+              {form.formState.errors.name.message}
             </div>
           )}
         </div>
         <div className="space-y-2">
           <Label htmlFor="category">Categoría *</Label>
           <Select 
-            value={formData.category} 
-            onValueChange={(value) => setFormData({ ...formData, category: value })}
-            required
+            value={form.watch('category')} 
+            onValueChange={(value) => form.setValue('category', value as any)}
           >
             <SelectTrigger 
               id="category"
               aria-required="true"
-              aria-describedby="category-error"
-              aria-invalid={!formData.category ? "true" : "false"}
               className="focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <SelectValue placeholder="Selecciona una categoría" />
@@ -648,10 +633,10 @@ function ExerciseForm({ formData, setFormData, onSubmit, submitting, isEdit }: E
               ))}
             </SelectContent>
           </Select>
-          {!formData.category && (
-            <div id="category-error" className="text-sm text-red-600" role="alert">
+          {form.formState.errors.category && (
+            <div className="text-sm text-red-600" role="alert">
               <span className="sr-only">Error: </span>
-              La categoría es requerida
+              {form.formState.errors.category.message}
             </div>
           )}
         </div>
@@ -661,8 +646,7 @@ function ExerciseForm({ formData, setFormData, onSubmit, submitting, isEdit }: E
         <Label htmlFor="description">Descripción</Label>
         <Textarea
           id="description"
-          value={formData.description}
-          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, description: e.target.value })}
+          {...form.register('description')}
           placeholder="Descripción breve del ejercicio"
           rows={3}
           aria-describedby="description-help"
@@ -671,21 +655,24 @@ function ExerciseForm({ formData, setFormData, onSubmit, submitting, isEdit }: E
         <div id="description-help" className="text-sm text-gray-500">
           Proporciona una descripción clara y concisa del ejercicio
         </div>
+        {form.formState.errors.description && (
+          <div className="text-sm text-red-600" role="alert">
+            <span className="sr-only">Error: </span>
+            {form.formState.errors.description.message}
+          </div>
+        )}
       </div>
 
       {/* Difficulty */}
       <div className="space-y-2">
         <Label htmlFor="difficulty">Dificultad *</Label>
         <Select 
-          value={formData.difficulty} 
-          onValueChange={(value) => setFormData({ ...formData, difficulty: value })}
-          required
+          value={form.watch('difficulty')} 
+          onValueChange={(value) => form.setValue('difficulty', value as any)}
         >
           <SelectTrigger 
             id="difficulty"
             aria-required="true"
-            aria-describedby="difficulty-error"
-            aria-invalid={!formData.difficulty ? "true" : "false"}
             className="focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
             <SelectValue placeholder="Selecciona la dificultad" />
@@ -698,10 +685,10 @@ function ExerciseForm({ formData, setFormData, onSubmit, submitting, isEdit }: E
             ))}
           </SelectContent>
         </Select>
-        {!formData.difficulty && (
-          <div id="difficulty-error" className="text-sm text-red-600" role="alert">
+        {form.formState.errors.difficulty && (
+          <div className="text-sm text-red-600" role="alert">
             <span className="sr-only">Error: </span>
-            La dificultad es requerida
+            {form.formState.errors.difficulty.message}
           </div>
         )}
       </div>
@@ -726,7 +713,7 @@ function ExerciseForm({ formData, setFormData, onSubmit, submitting, isEdit }: E
             >
               <input
                 type="checkbox"
-                checked={formData.muscleGroups.includes(group)}
+                checked={(form.watch('muscleGroups') || []).includes(group as any)}
                 onChange={() => handleMuscleGroupToggle(group)}
                 className="rounded focus:ring-2 focus:ring-blue-500"
                 aria-describedby={`muscle-${group}-desc`}
@@ -760,7 +747,7 @@ function ExerciseForm({ formData, setFormData, onSubmit, submitting, isEdit }: E
             >
               <input
                 type="checkbox"
-                checked={formData.equipments.includes(equipment)}
+                checked={(form.watch('equipments') || []).includes(equipment as any)}
                 onChange={() => handleEquipmentToggle(equipment)}
                 className="rounded focus:ring-2 focus:ring-blue-500"
                 aria-describedby={`equipment-${equipment}-desc`}
@@ -779,8 +766,7 @@ function ExerciseForm({ formData, setFormData, onSubmit, submitting, isEdit }: E
         <Label htmlFor="instructions">Instrucciones</Label>
         <Textarea
           id="instructions"
-          value={formData.instructions}
-          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, instructions: e.target.value })}
+          {...form.register('instructions')}
           placeholder="Instrucciones paso a paso para realizar el ejercicio"
           rows={4}
           aria-describedby="instructions-help"
@@ -789,6 +775,12 @@ function ExerciseForm({ formData, setFormData, onSubmit, submitting, isEdit }: E
         <div id="instructions-help" className="text-sm text-gray-500">
           Describe los pasos detallados para ejecutar correctamente el ejercicio
         </div>
+        {form.formState.errors.instructions && (
+          <div className="text-sm text-red-600" role="alert">
+            <span className="sr-only">Error: </span>
+            {form.formState.errors.instructions.message}
+          </div>
+        )}
       </div>
 
       {/* Tips */}
@@ -796,11 +788,16 @@ function ExerciseForm({ formData, setFormData, onSubmit, submitting, isEdit }: E
         <Label htmlFor="tips">Consejos</Label>
         <Textarea
           id="tips"
-          value={formData.tips}
-          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, tips: e.target.value })}
+          {...form.register('tips')}
           placeholder="Consejos y recomendaciones adicionales"
           rows={3}
         />
+        {form.formState.errors.tips && (
+          <div className="text-sm text-red-600" role="alert">
+            <span className="sr-only">Error: </span>
+            {form.formState.errors.tips.message}
+          </div>
+        )}
       </div>
 
       {/* Media URLs */}
@@ -809,30 +806,62 @@ function ExerciseForm({ formData, setFormData, onSubmit, submitting, isEdit }: E
           <Label htmlFor="imageUrl">URL de Imagen</Label>
           <Input
             id="imageUrl"
-            value={formData.imageUrl}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, imageUrl: e.target.value })}
+            {...form.register('imageUrl')}
             placeholder="https://..."
           />
+          {form.formState.errors.imageUrl && (
+            <div className="text-sm text-red-600" role="alert">
+              <span className="sr-only">Error: </span>
+              {form.formState.errors.imageUrl.message}
+            </div>
+          )}
         </div>
         <div className="space-y-2">
           <Label htmlFor="videoUrl">URL de Video</Label>
           <Input
             id="videoUrl"
-            value={formData.videoUrl}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, videoUrl: e.target.value })}
+            {...form.register('videoUrl')}
             placeholder="https://..."
           />
+          {form.formState.errors.videoUrl && (
+            <div className="text-sm text-red-600" role="alert">
+              <span className="sr-only">Error: </span>
+              {form.formState.errors.videoUrl.message}
+            </div>
+          )}
         </div>
         <div className="space-y-2">
           <Label htmlFor="gifUrl">URL de GIF</Label>
           <Input
             id="gifUrl"
-            value={formData.gifUrl}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, gifUrl: e.target.value })}
+            {...form.register('gifUrl')}
             placeholder="https://..."
           />
+          {form.formState.errors.gifUrl && (
+            <div className="text-sm text-red-600" role="alert">
+              <span className="sr-only">Error: </span>
+              {form.formState.errors.gifUrl.message}
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Validation Errors */}
+      {(form.formState.errors.muscleGroups || form.formState.errors.equipments) && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+          <div className="text-sm text-red-800">
+            <strong>Errores de validación:</strong>
+            <ul className="mt-2 list-disc list-inside">
+              {form.formState.errors.muscleGroups && (
+                <li>{form.formState.errors.muscleGroups.message}</li>
+              )}
+              {form.formState.errors.equipments && (
+                <li>{form.formState.errors.equipments.message}</li>
+              )}
+            </ul>
+          </div>
+        </div>
+      )}
 
       {/* Submit Button */}
       <div className="flex justify-end gap-2">
@@ -846,8 +875,8 @@ function ExerciseForm({ formData, setFormData, onSubmit, submitting, isEdit }: E
           Cancelar
         </Button>
         <Button
-          onClick={onSubmit}
-          disabled={submitting || !formData.name}
+          type="submit"
+          disabled={submitting || form.formState.isSubmitting}
           className="bg-green-600 hover:bg-green-700"
         >
           {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
@@ -920,9 +949,11 @@ function ExerciseDetails({ exercise }: ExerciseDetailsProps) {
             {exercise.gifUrl && (
               <div className="space-y-2">
                 <Label>GIF</Label>
-                <img 
+                <NextImage 
                   src={exercise.gifUrl} 
-                  alt={exercise.name}
+                  alt={`${exercise.name} demonstration`}
+                  width={400}
+                  height={128}
                   className="w-full h-32 object-cover rounded-lg"
                   onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
                     e.currentTarget.style.display = 'none'

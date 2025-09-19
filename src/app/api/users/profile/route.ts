@@ -2,8 +2,27 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
-
 import { logger } from '@/lib/logger'
+import { z } from 'zod'
+
+// Schema de validación para actualización de perfil
+const updateProfileSchema = z.object({
+	name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres').max(100, 'El nombre no puede exceder 100 caracteres').optional(),
+	avatar: z.string().url('Avatar debe ser una URL válida').optional(),
+	// Campos de perfil de cliente
+	age: z.number().int().min(13, 'La edad mínima es 13 años').max(120, 'La edad máxima es 120 años').optional(),
+	weight: z.number().min(20, 'El peso mínimo es 20 kg').max(500, 'El peso máximo es 500 kg').optional(),
+	height: z.number().min(100, 'La altura mínima es 100 cm').max(250, 'La altura máxima es 250 cm').optional(),
+	gender: z.enum(['MALE', 'FEMALE', 'OTHER'], { errorMap: () => ({ message: 'Género debe ser MALE, FEMALE o OTHER' }) }).optional(),
+	fitnessGoal: z.enum(['WEIGHT_LOSS', 'MUSCLE_GAIN', 'ENDURANCE', 'STRENGTH', 'GENERAL_FITNESS'], { errorMap: () => ({ message: 'Objetivo de fitness inválido' }) }).optional(),
+	activityLevel: z.enum(['SEDENTARY', 'LIGHTLY_ACTIVE', 'MODERATELY_ACTIVE', 'VERY_ACTIVE', 'EXTREMELY_ACTIVE'], { errorMap: () => ({ message: 'Nivel de actividad inválido' }) }).optional(),
+	// Campos de perfil de entrenador
+	bio: z.string().max(500, 'La biografía no puede exceder 500 caracteres').optional(),
+	experience: z.number().int().min(0, 'La experiencia no puede ser negativa').max(50, 'La experiencia máxima es 50 años').optional(),
+	specialties: z.array(z.string()).max(10, 'Máximo 10 especialidades').optional(),
+	hourlyRate: z.number().min(0, 'La tarifa no puede ser negativa').max(1000, 'La tarifa máxima es 1000').optional(),
+	maxClients: z.number().int().min(1, 'Mínimo 1 cliente').max(200, 'Máximo 200 clientes').optional()
+})
 // GET /api/users/profile - Obtener perfil completo del usuario
 export async function GET(req: NextRequest) {
   try {
@@ -150,13 +169,33 @@ export async function GET(req: NextRequest) {
 
 // PUT /api/users/profile - Actualizar perfil del usuario
 export async function PUT(req: NextRequest) {
+  let session: any = null
   try {
-    const session = await getServerSession(authOptions)
+    session = await getServerSession(authOptions)
     if (!session?.user) {
+      logger.warn('Unauthorized profile update attempt', 'API')
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
-    const body = await req.json()
+    let body
+    try {
+      body = await req.json()
+    } catch (error) {
+      logger.error('Invalid JSON in profile update request:', error, 'API')
+      return NextResponse.json({ error: 'Formato de datos inválido' }, { status: 400 })
+    }
+
+    // Validar datos de entrada
+    const validationResult = updateProfileSchema.safeParse(body)
+    if (!validationResult.success) {
+      const errors = validationResult.error.errors.map(err => `${err.path.join('.')}: ${err.message}`)
+      logger.warn('Profile update validation failed:', { errors, userId: session.user.id }, 'API')
+      return NextResponse.json({ 
+        error: 'Datos de entrada inválidos', 
+        details: errors 
+      }, { status: 400 })
+    }
+
     const {
       name,
       avatar,
@@ -173,23 +212,41 @@ export async function PUT(req: NextRequest) {
       specialties,
       hourlyRate,
       maxClients
-    } = body
+    } = validationResult.data
+
+    // Verificar que el usuario existe antes de actualizar
+    const existingUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { id: true, role: true }
+    })
+
+    if (!existingUser) {
+      logger.error('User not found during profile update:', { userId: session.user.id }, 'API')
+      return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 })
+    }
 
     await prisma.$transaction(async (tx) => {
       // Actualizar usuario base
       const updateData: any = {}
-      if (name !== undefined) updateData.name = name
-      if (avatar !== undefined) updateData.avatar = avatar
+      if (name !== undefined) {
+        updateData.name = name.trim()
+      }
+      if (avatar !== undefined) {
+        updateData.avatar = avatar
+      }
 
       if (Object.keys(updateData).length > 0) {
         await tx.user.update({
           where: { id: session.user.id },
-          data: updateData
+          data: {
+            ...updateData,
+            updatedAt: new Date()
+          }
         })
       }
 
       // Actualizar perfil de cliente si es necesario
-      if (session.user.role === 'CLIENT' || session.user.role === 'TRAINER') {
+      if (existingUser.role === 'CLIENT' || existingUser.role === 'TRAINER') {
         const clientData: any = {}
         if (age !== undefined) clientData.age = age
         if (weight !== undefined) clientData.weight = weight
@@ -199,37 +256,64 @@ export async function PUT(req: NextRequest) {
         if (activityLevel !== undefined) clientData.activityLevel = activityLevel
 
         if (Object.keys(clientData).length > 0) {
-          await tx.clientProfile.upsert({
-            where: { id: session.user.id },
-            update: clientData,
-            create: {
-              userId: session.user.id,
-              ...clientData
+          try {
+            const existingClientProfile = await tx.clientProfile.findFirst({
+              where: { userId: session.user.id },
+            })
+            if (existingClientProfile) {
+              await tx.clientProfile.update({
+                where: { id: existingClientProfile.id },
+                data: {
+                  ...clientData,
+                  updatedAt: new Date(),
+                },
+              })
+            } else {
+              await tx.clientProfile.create({
+                data: {
+                  userId: session.user.id,
+                  ...clientData,
+                },
+              })
             }
-          })
+          } catch (error) {
+            logger.error('Error updating client profile:', error, 'API')
+            throw new Error('Error al actualizar perfil de cliente')
+          }
         }
       }
 
       // Actualizar perfil de entrenador si es necesario
-      if (session.user.role === 'TRAINER') {
+      if (existingUser.role === 'TRAINER') {
         const trainerData: any = {}
-        if (bio !== undefined) trainerData.bio = bio
+        if (bio !== undefined) trainerData.bio = bio.trim()
         if (experience !== undefined) trainerData.experience = experience
-        if (specialties !== undefined) trainerData.specialties = specialties
+        if (specialties !== undefined) {
+          // Validar y limpiar especialidades
+          trainerData.specialties = specialties.filter(s => s && s.trim()).map(s => s.trim())
+        }
         if (hourlyRate !== undefined) trainerData.hourlyRate = hourlyRate
         if (maxClients !== undefined) trainerData.maxClients = maxClients
 
         if (Object.keys(trainerData).length > 0) {
-          await tx.trainerProfile.upsert({
-            where: { userId: session.user.id },
-            update: trainerData,
-            create: {
-              userId: session.user.id,
-              isActive: true,
-              maxClients: maxClients || 50,
-              ...trainerData
-            }
-          })
+          try {
+            await tx.trainerProfile.upsert({
+              where: { userId: session.user.id },
+              update: {
+                ...trainerData,
+                updatedAt: new Date()
+              },
+              create: {
+                userId: session.user.id,
+                isActive: true,
+                maxClients: maxClients || 50,
+                ...trainerData
+              }
+            })
+          } catch (error) {
+            logger.error('Error updating trainer profile:', error, 'API')
+            throw new Error('Error al actualizar perfil de entrenador')
+          }
         }
       }
     })
@@ -243,14 +327,37 @@ export async function PUT(req: NextRequest) {
       }
     })
 
-    const { password, ...userWithoutPassword } = updatedUser!
+    if (!updatedUser) {
+      logger.error('Updated user not found:', { userId: session.user.id }, 'API')
+      return NextResponse.json({ error: 'Error al obtener perfil actualizado' }, { status: 500 })
+    }
 
+    const { password, ...userWithoutPassword } = updatedUser
+
+    logger.info('Profile updated successfully:', { userId: session.user.id }, 'API')
     return NextResponse.json(userWithoutPassword)
 
   } catch (error) {
-    logger.error('Error updating user profile:', error, 'API')
+    // Manejo específico de errores de validación
+    if (error instanceof Error && error.message.includes('actualizar perfil')) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 400 }
+      )
+    }
+
+    // Error de base de datos
+    if (error && typeof error === 'object' && 'code' in error) {
+      logger.error('Database error updating profile:', { error }, 'API')
+      return NextResponse.json(
+        { error: 'Error de base de datos al actualizar perfil' },
+        { status: 500 }
+      )
+    }
+
+    logger.error('Unexpected error updating user profile:', error, 'API')
     return NextResponse.json(
-      { error: 'Error al actualizar perfil' },
+      { error: 'Error interno del servidor' },
       { status: 500 }
     )
   }

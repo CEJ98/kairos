@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react'
 
-import { logger } from '@/lib/logger'
 interface PWAInstallPrompt {
 	prompt: () => Promise<void>
 	userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
@@ -83,16 +82,16 @@ export function usePWA(): UsePWAReturn {
 			const choiceResult = await deferredPrompt.userChoice
 			
 			if (choiceResult.outcome === 'accepted') {
-				logger.debug('PWA installation accepted', 'PWA')
+				console.log('PWA installation accepted')
 				setIsInstalled(true)
 			} else {
-				logger.debug('PWA installation dismissed', 'PWA')
+				console.log('PWA installation dismissed')
 			}
 			
 			setDeferredPrompt(null)
 			setIsInstallable(false)
 		} catch (error) {
-			logger.error('Error installing PWA:', error, 'PWA')
+			console.error('Error installing PWA:', error)
 			throw error
 		}
 	}, [deferredPrompt])
@@ -100,7 +99,7 @@ export function usePWA(): UsePWAReturn {
 	// Registrar Service Worker
 	const registerSW = useCallback(async (): Promise<ServiceWorkerRegistration | null> => {
 		if (!('serviceWorker' in navigator)) {
-			logger.debug('Service Worker not supported', 'PWA')
+			console.log('Service Worker not supported')
 			return null
 		}
 
@@ -109,7 +108,7 @@ export function usePWA(): UsePWAReturn {
 				scope: '/'
 			})
 			
-			logger.debug('Service Worker registered:', registration, 'PWA')
+			console.log('Service Worker registered:', registration)
 			setSWRegistration(registration)
 			
 			// Escuchar actualizaciones
@@ -119,7 +118,7 @@ export function usePWA(): UsePWAReturn {
 					newWorker.addEventListener('statechange', () => {
 						if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
 							// Nueva versión disponible
-							logger.debug('New service worker version available', 'PWA')
+							console.log('New service worker version available')
 							// Aquí podrías mostrar una notificación al usuario
 						}
 					})
@@ -128,7 +127,7 @@ export function usePWA(): UsePWAReturn {
 			
 			return registration
 		} catch (error) {
-			logger.error('Service Worker registration failed:', error, 'PWA')
+			console.error('Service Worker registration failed:', error)
 			return null
 		}
 	}, [])
@@ -148,7 +147,7 @@ export function usePWA(): UsePWAReturn {
 			}
 			return false
 		} catch (error) {
-			logger.error('Service Worker unregistration failed:', error, 'PWA')
+			console.error('Service Worker unregistration failed:', error)
 			return false
 		}
 	}, [])
@@ -203,7 +202,7 @@ export function usePWA(): UsePWAReturn {
 
 			return subscription
 		} catch (error) {
-			logger.error('Push subscription failed:', error, 'PWA')
+			console.error('Push subscription failed:', error)
 			return null
 		}
 	}, [swRegistration, requestNotificationPermission])
@@ -230,7 +229,7 @@ export function usePWA(): UsePWAReturn {
 			}
 			return false
 		} catch (error) {
-			logger.error('Push unsubscription failed:', error, 'PWA')
+			console.error('Push unsubscription failed:', error)
 			return false
 		}
 	}, [swRegistration])
@@ -238,7 +237,7 @@ export function usePWA(): UsePWAReturn {
 	// Enviar notificación local
 	const sendNotification = useCallback((title: string, options?: NotificationOptions) => {
 		if (!('Notification' in window)) {
-			logger.warn('Notifications not supported', 'PWA')
+			console.warn('Notifications not supported')
 			return
 		}
 

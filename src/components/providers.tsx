@@ -2,8 +2,12 @@
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { SessionProvider } from 'next-auth/react'
-import { Toaster } from 'react-hot-toast'
+import { Toaster } from 'sonner'
 import { useState } from 'react'
+import { ChatLayout } from '@/components/layout/chat-layout'
+import { PushNotificationManager } from '@/components/notifications/push-notification-manager'
+import { ThemeProvider } from 'next-themes'
+import ErrorBoundary from '@/components/ErrorBoundary'
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -19,30 +23,22 @@ export function Providers({ children }: { children: React.ReactNode }) {
   )
 
   return (
-    <SessionProvider>
-      <QueryClientProvider client={queryClient}>
-        {children}
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            duration: 4000,
-            style: {
-              background: '#363636',
-              color: '#fff',
-            },
-            success: {
-              style: {
-                background: '#22c55e',
-              },
-            },
-            error: {
-              style: {
-                background: '#ef4444',
-              },
-            },
-          }}
-        />
-      </QueryClientProvider>
-    </SessionProvider>
+    <ErrorBoundary>
+      <SessionProvider>
+        <QueryClientProvider client={queryClient}>
+          <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+            <ChatLayout>
+              {children}
+            </ChatLayout>
+            <PushNotificationManager />
+            <Toaster 
+              position="top-right"
+              richColors
+              closeButton
+            />
+          </ThemeProvider>
+        </QueryClientProvider>
+      </SessionProvider>
+    </ErrorBoundary>
   )
 }

@@ -30,7 +30,7 @@ async function testLogin() {
 		console.log(`   - Verificado: ${demoUser.isVerified}`)
 
 		// 2. Verificar contraseña
-		const isPasswordValid = await compare('demo123', demoUser.password)
+		const isPasswordValid = await compare('demo1234', demoUser.password)
 		console.log(`\n🔑 Contraseña válida: ${isPasswordValid ? '✅ Sí' : '❌ No'}`)
 
 		if (!isPasswordValid) {
@@ -77,7 +77,7 @@ async function testLogin() {
 		console.log('\n🔗 Para probar:')
 		console.log('1. Ir a: http://localhost:3000/signin')
 		console.log('2. Email: demo@kairos.com')
-		console.log('3. Contraseña: demo123')
+		console.log('3. Contraseña: demo1234')
 		console.log('4. Hacer clic en "Iniciar Sesión"')
 
 		return true

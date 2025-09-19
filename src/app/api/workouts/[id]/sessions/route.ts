@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
-
+import { notificationService } from '@/lib/notification-service'
 import { logger } from '@/lib/logger'
 // POST /api/workouts/[id]/sessions - Crear nueva sesión de entrenamiento
 export async function POST(
@@ -113,6 +113,43 @@ export async function POST(
         }
       }
     })
+
+    // Enviar notificación de progreso si la sesión está completada
+    if (status === 'COMPLETED') {
+      try {
+        // Obtener información del entrenador si existe
+        const workoutWithCreator = await prisma.workout.findUnique({
+          where: { id: id },
+          include: {
+            creator: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
+          }
+        })
+
+        if (workoutWithCreator?.creator) {
+           await notificationService.notifyProgressUpdate(
+             workoutWithCreator.creator.id,
+             session.user.id,
+             session.user.name || 'Cliente',
+             workoutWithCreator.name,
+             {
+               workoutId: id,
+               sessionId: workoutSession.id,
+               duration: duration,
+               caloriesBurned: caloriesBurned,
+               rating: rating
+             }
+           )
+        }
+      } catch (notificationError) {
+        logger.error('Error sending progress notification:', notificationError, 'API')
+        // No interrumpir el flujo principal por error de notificación
+      }
+    }
 
     return NextResponse.json(completeSession, { status: 201 })
 

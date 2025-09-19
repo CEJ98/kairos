@@ -11,7 +11,7 @@ export const authOptions: NextAuthOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 días
   },
   pages: {
-    signIn: '/signin',
+    signIn: '/es/signin',
     error: '/auth/error',
   },
   providers: [
@@ -22,6 +22,8 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
+        // Import dinámico para facilitar mocking en tests
+        const { prisma } = await import('@/lib/db')
         if (!credentials?.email || !credentials?.password) {
           return null
         }
@@ -74,7 +76,48 @@ export const authOptions: NextAuthOptions = {
       }
       return session
     },
+    async redirect({ url, baseUrl }) {
+      // Si la URL es relativa, construir URL completa
+      if (url.startsWith('/')) {
+        return `${baseUrl}${url}`
+      }
+      // Si la URL ya contiene el baseUrl, usarla directamente
+      if (url.startsWith(baseUrl)) {
+        return url
+      }
+      // Por defecto, redirigir al dashboard localizado
+      return `${baseUrl}/es/dashboard`
+    },
   },
+}
+
+// Función auxiliar para pruebas: replica la lógica de authorize
+export async function authorizeCredentialsForTest(credentials: { email?: string; password?: string } | null) {
+  if (!credentials?.email || !credentials?.password) {
+    return null
+  }
+  const { prisma } = await import('@/lib/db')
+  const user = await prisma.user.findUnique({
+    where: { email: credentials.email },
+    include: {
+      trainerProfile: true,
+      clientProfiles: true,
+    },
+  })
+
+  if (!user) return null
+  if (!user.password) return null
+
+  const isPasswordValid = await compare(credentials.password, user.password)
+  if (!isPasswordValid) return null
+
+  return {
+    id: user.id,
+    email: user.email,
+    name: user.name || '',
+    image: user.avatar || '',
+    role: user.role,
+  }
 }
 
 // Tipos extendidos para NextAuth

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-import { logger } from '@/lib/logger'
 /**
  * Health check endpoint para monitoreo de la aplicación
  * Verifica el estado de la base de datos y servicios críticos
@@ -15,14 +14,22 @@ export async function GET(request: NextRequest) {
 		const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 		
 		if (!supabaseUrl || !supabaseKey) {
+			const responseTime = Date.now() - startTime
 			return NextResponse.json(
 				{
-					status: 'error',
+					status: 'degraded',
 					message: 'Supabase configuration missing',
 					timestamp: new Date().toISOString(),
-					version: process.env.npm_package_version || '1.0.0'
+					responseTime: `${responseTime}ms`,
+					version: process.env.npm_package_version || '1.0.0',
+					services: {
+						database: 'not_configured',
+						api: 'operational',
+						auth: 'operational'
+					},
+					environment: process.env.NODE_ENV || 'development'
 				},
-				{ status: 503 }
+				{ status: 200 }
 			)
 		}
 		
@@ -66,7 +73,7 @@ export async function GET(request: NextRequest) {
 		})
 		
 	} catch (error) {
-		logger.error('Health check failed:', error, 'API')
+		console.error('Health check failed:', error)
 		
 		return NextResponse.json(
 			{

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -21,8 +21,11 @@ import {
   Users,
   Loader2
 } from 'lucide-react'
-import { logger } from '@/lib/logger'
 import { toast } from 'sonner'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog'
+import { WorkoutForm } from '@/components/workouts/workout-form'
+import { WorkoutTable } from '@/components/workouts/workout-table'
+import { useCreateWorkout, useWorkoutsList } from '@/hooks/use-workouts'
 
 interface Workout {
   id: string
@@ -60,42 +63,11 @@ interface Workout {
 export default function WorkoutsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
-  const [workouts, setWorkouts] = useState<Workout[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  // Cargar workouts desde la API
-  useEffect(() => {
-    const fetchWorkouts = async () => {
-      try {
-        setLoading(true)
-        const params = new URLSearchParams()
-        if (selectedCategory !== 'all') {
-          params.append('category', selectedCategory)
-        }
-        if (searchTerm) {
-          params.append('search', searchTerm)
-        }
-
-        const response = await fetch(`/api/workouts?${params.toString()}`)
-        if (!response.ok) {
-          throw new Error('Error al cargar rutinas')
-        }
-
-        const data = await response.json()
-        setWorkouts(data.workouts || [])
-        setError(null)
-      } catch (err) {
-        logger.error('Error fetching workouts:', err)
-        setError('Error al cargar las rutinas')
-        toast.error('Error al cargar las rutinas')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchWorkouts()
-  }, [selectedCategory, searchTerm])
+  const { data, isLoading, isError } = useWorkoutsList({ category: selectedCategory, search: searchTerm })
+  const workouts: Workout[] = data?.workouts || []
+  const loading = isLoading
+  const error = isError ? 'Error al cargar las rutinas' : null
+  const createMutation = useCreateWorkout()
 
   const categories = [
     { value: 'all', label: 'Todas', count: workouts.length },
@@ -146,6 +118,19 @@ export default function WorkoutsPage() {
           </Button>
         </Link>
       </div>
+
+      {/* Quick create form */}
+      <WorkoutForm 
+        onSubmit={async (values) => {
+          try {
+            await createMutation.mutateAsync({ ...values })
+            toast.success('Rutina creada')
+          } catch (e: any) {
+            toast.error(e?.message || 'Error al crear rutina')
+          }
+        }}
+        submitting={createMutation.isPending}
+      />
 
       {/* Filters */}
       <Card className="mobile-card">
@@ -328,6 +313,9 @@ export default function WorkoutsPage() {
                   </Button>
                 </Link>
                 
+                {/* Planificar */}
+                <PlanWorkoutDialog workoutId={workout.id} workoutName={workout.name} />
+
                 <Link href={`/dashboard/workouts/${workout.id}/edit`}>
                   <Button variant="outline" size="sm" className="touch-target">
                     <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -343,6 +331,64 @@ export default function WorkoutsPage() {
         ))}
       </div>
       )}
+
+      {/* Simple table view (title, createdAt) */}
+      {!loading && !error && (
+        <WorkoutTable rows={workouts.map(w => ({ id: w.id, name: w.name, createdAt: w.createdAt }))} />
+      )}
     </div>
+  )
+}
+
+function PlanWorkoutDialog({ workoutId, workoutName }: { workoutId: string; workoutName: string }) {
+  const [open, setOpen] = useState(false)
+  const [date, setDate] = useState<string>('')
+
+  async function onSubmit() {
+    if (!date) {
+      toast.error('Selecciona una fecha')
+      return
+    }
+    try {
+      const res = await fetch('/api/calendar/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ workoutId, date }),
+      })
+      if (!res.ok) throw new Error('No se pudo planificar')
+      toast.success('Workout planificado')
+      setOpen(false)
+    } catch (e: any) {
+      toast.error(e?.message || 'Error al planificar')
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm" className="touch-target">Planificar</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Planificar rutina</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="text-sm text-gray-600">{workoutName}</div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Fecha</label>
+            <input
+              type="date"
+              className="border rounded px-3 py-2 text-sm w-full"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+          <Button onClick={onSubmit}>Guardar</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

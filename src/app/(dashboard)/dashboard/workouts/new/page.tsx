@@ -18,7 +18,6 @@ import {
   Save,
   Play
 } from 'lucide-react'
-import { logger } from '@/lib/logger'
 import Link from 'next/link'
 import { toast } from 'react-hot-toast'
 
@@ -204,7 +203,7 @@ export default function NewWorkoutPage() {
         router.push(`/dashboard/workouts/${workout.id}/start`)
       }
     } catch (error) {
-      logger.error('Error saving workout:', error)
+      console.error('Error saving workout:', error)
       toast.error(error instanceof Error ? error.message : 'Error al guardar la rutina')
     }
   }

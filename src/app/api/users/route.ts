@@ -3,7 +3,6 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 
-import { logger } from '@/lib/logger'
 // GET /api/users - Obtener usuarios (solo para admins/trainers)
 export async function GET(req: NextRequest) {
 	try {
@@ -100,7 +99,7 @@ export async function GET(req: NextRequest) {
 		})
 
 	} catch (error) {
-		logger.error('Error fetching users:', error, 'API')
+		console.error('Error fetching users:', error)
 		return NextResponse.json(
 			{ error: 'Error al obtener usuarios' },
 			{ status: 500 }
@@ -187,7 +186,7 @@ export async function POST(req: NextRequest) {
 		return NextResponse.json(completeUser, { status: 201 })
 
 	} catch (error) {
-		logger.error('Error creating user:', error, 'API')
+		console.error('Error creating user:', error)
 		return NextResponse.json(
 			{ error: 'Error al crear usuario' },
 			{ status: 500 }

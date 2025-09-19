@@ -29,7 +29,7 @@ async function testAuth() {
     
     // Probar contraseña
     if (user.password) {
-      const isPasswordValid = await compare('demo123', user.password)
+      const isPasswordValid = await compare('demo1234', user.password)
       console.log('🔐 Contraseña válida:', isPasswordValid)
     } else {
       console.log('❌ Usuario no tiene contraseña configurada')

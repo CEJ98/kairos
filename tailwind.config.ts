@@ -1,4 +1,5 @@
 import type { Config } from 'tailwindcss'
+import { designSystem } from './src/lib/design-system'
 
 const config: Config = {
   darkMode: ['class'],
@@ -22,6 +23,7 @@ const config: Config = {
       },
     },
     screens: {
+      ...designSystem.breakpoints,
       'xs': '475px',
       'sm': '640px',
       'md': '768px',
@@ -35,11 +37,13 @@ const config: Config = {
     },
     extend: {
       fontFamily: {
+        ...designSystem.typography.fontFamily,
         sans: ['Inter', 'system-ui', 'sans-serif'],
         display: ['Cal Sans', 'Inter', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
       },
       fontSize: {
+        ...designSystem.typography.fontSize,
         'xs': ['0.75rem', { lineHeight: '1rem' }],
         'sm': ['0.875rem', { lineHeight: '1.25rem' }],
         'base': ['1rem', { lineHeight: '1.5rem' }],
@@ -59,7 +63,11 @@ const config: Config = {
         'mobile-base': ['0.9375rem', { lineHeight: '1.375rem' }],
         'mobile-lg': ['1.0625rem', { lineHeight: '1.5rem' }],
       },
+      fontWeight: {
+        ...designSystem.typography.fontWeight,
+      },
       spacing: {
+        ...designSystem.spacing,
         '18': '4.5rem',
         '88': '22rem',
         '128': '32rem',
@@ -70,6 +78,9 @@ const config: Config = {
         'safe-right': 'env(safe-area-inset-right)',
       },
       colors: {
+        // Colores del sistema de diseño como base
+        ...designSystem.colors,
+        // Sobrescribir con compatibilidad shadcn/ui
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
@@ -78,16 +89,6 @@ const config: Config = {
         primary: {
           DEFAULT: 'hsl(var(--primary))',
           foreground: 'hsl(var(--primary-foreground))',
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
         },
         secondary: {
           DEFAULT: 'hsl(var(--secondary))',
@@ -113,18 +114,18 @@ const config: Config = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
-        // Mobile-specific colors
-        'mobile-bg': '#fafafa',
-        'mobile-surface': '#ffffff',
-        'mobile-border': '#e5e7eb',
       },
       borderRadius: {
+        ...designSystem.borderRadius,
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
         'mobile': '0.75rem',
         'mobile-sm': '0.5rem',
         'mobile-lg': '1rem',
+      },
+      boxShadow: {
+        ...designSystem.boxShadow,
       },
       minHeight: {
         'touch': '44px',

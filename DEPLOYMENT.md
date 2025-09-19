@@ -161,6 +161,90 @@ Este script verifica:
 3. **Autenticación**: Prueba login/registro
 4. **Base de datos**: Verifica conexión a Supabase
 
+## 🐳 Despliegue Local con Docker Compose
+
+Sigue estos pasos para levantar Kairos en local usando Docker Compose y una base de datos PostgreSQL/Redis locales.
+
+### 1) Preparar variables de entorno
+
+1. Copia el archivo de ejemplo:
+
+```bash
+cp .env.example .env.local
+```
+
+2. Verifica que `DATABASE_URL`, `REDIS_URL`, `NEXTAUTH_URL` y `NEXTAUTH_SECRET` existen y apuntan a los valores por defecto que usa `docker-compose.yml`:
+
+- `DATABASE_URL=postgresql://postgres:postgres_password@localhost:5432/kairos_db`
+- `REDIS_URL=redis://localhost:6379`
+- `NEXTAUTH_URL=http://localhost:3000`
+
+No cambies puertos ni nombres de variables existentes.
+
+### 2) Levantar la infraestructura
+
+```bash
+docker compose up -d postgres redis
+
+# Opcional: levantar toda la pila, incluyendo la app y nginx
+docker compose up -d
+```
+
+Espera unos segundos a que PostgreSQL esté listo.
+
+### 3) Migraciones y Seed de la base de datos
+
+Con la base de datos en marcha, ejecuta migraciones y seed desde tu entorno local (usa la `DATABASE_URL` anterior):
+
+```bash
+# Aplicar migraciones (desarrollo)
+npm run db:migrate
+
+# Sembrar datos de ejemplo
+npm run db:seed
+```
+
+Si prefieres un flujo más "producción":
+
+```bash
+npx prisma migrate deploy
+npm run db:seed
+```
+
+### 4) Comprobaciones de salud
+
+- App (cuando `app` está levantada):
+
+```bash
+curl -i http://localhost:3000/api/health
+```
+
+Deberías obtener `200 OK` y un JSON con el estado.
+
+- Base de datos (desde el contenedor):
+
+```bash
+docker compose exec postgres pg_isready -U postgres
+```
+
+El resultado "accepting connections" indica que PostgreSQL está listo.
+
+### 5) Acceso a la aplicación
+
+- Navega a `http://localhost:3000`
+- Endpoints clave para verificación rápida:
+  - `/`
+  - `/signin`
+  - `/signup`
+  - `/dashboard`
+  - `/api/health`
+
+También puedes usar el smoke test incluido:
+
+```bash
+BASE_URL=http://localhost:3000 npm run smoke
+```
+
 ## 📊 Monitoreo y Logs
 
 ### Ver Logs

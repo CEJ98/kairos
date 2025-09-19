@@ -6,7 +6,21 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { LoadingSpinner, withLazyLoading } from "@/components/ui/lazy-loader"
+import { LoadingSpinner } from "@/components/ui/lazy-loader"
+import { lazy } from 'react'
+
+// Lazy components con imports estáticos optimizados
+const ProgressChart = lazy(() => 
+	import('@/components/dashboard/progress-chart').then(module => ({ default: module.default }))
+)
+const DashboardCard = lazy(() => 
+	import('@/components/dashboard/dashboard-card').then(module => ({ default: module.default }))
+)
+const UpcomingWorkout = lazy(() => 
+	import('@/components/dashboard/upcoming-workout').then(module => ({ default: module.default }))
+)
+const WeeklyStats = lazy(() => import('@/components/dashboard/weekly-stats'))
+const RecentActivity = lazy(() => import('@/components/dashboard/recent-activity'))
 import { 
 	Home, 
 	Calendar, 
@@ -43,21 +57,7 @@ import Link from "next/link"
 import { useSession } from "next-auth/react"
 import { useDashboardData } from "@/hooks/useDashboardData"
 
-// Lazy load heavy components
-const LazyProgressChart = withLazyLoading(
-	() => import('@/components/dashboard/progress-chart'),
-	{ loadingMessage: 'Cargando gráfico de progreso...', loadingSize: 'sm' }
-)
-
-const LazyWeeklyStats = withLazyLoading(
-	() => import('@/components/dashboard/weekly-stats'),
-	{ loadingMessage: 'Cargando estadísticas semanales...', loadingSize: 'sm' }
-)
-
-const LazyRecentActivity = withLazyLoading(
-	() => import('@/components/dashboard/recent-activity'),
-	{ loadingMessage: 'Cargando actividad reciente...', loadingSize: 'sm' }
-)
+// Los componentes lazy ya están definidos arriba
 
 export default function FitnessDashboard() {
 	const { data: session } = useSession()
@@ -110,7 +110,8 @@ export default function FitnessDashboard() {
 	}
 
 	return (
-		<div className="min-h-screen bg-gray-50 mobile-spacing">
+		<div className="min-h-screen bg-gray-50">
+			<div className="page-container mobile-spacing">
 			{/* Header */}
 			<div className="flex items-center justify-between mobile-gap">
 				<div className="flex items-center gap-3">
@@ -175,17 +176,106 @@ export default function FitnessDashboard() {
 			</Card>
 
 			{/* Main Content Grid */}
+			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+				{/* Dashboard Card - Últimos Entrenamientos */}
+				<div className="lg:col-span-1">
+					<Suspense fallback={
+						<Card className="h-96">
+							<CardContent className="p-6">
+								<div className="animate-pulse space-y-4">
+									<div className="h-4 bg-gray-200 rounded w-3/4"></div>
+									<div className="space-y-2">
+										<div className="h-3 bg-gray-200 rounded"></div>
+										<div className="h-3 bg-gray-200 rounded w-5/6"></div>
+										<div className="h-3 bg-gray-200 rounded w-4/6"></div>
+									</div>
+									<div className="h-8 bg-gray-200 rounded w-1/2 mt-4"></div>
+								</div>
+							</CardContent>
+						</Card>
+					}>
+						<DashboardCard 
+							totalWorkouts={stats.totalWorkouts}
+							weeklyWorkouts={stats.completedWorkouts}
+							isLoading={isLoading}
+						/>
+					</Suspense>
+				</div>
+
+				{/* Progress Chart - Progreso Corporal */}
+				<div className="lg:col-span-1">
+					<Suspense fallback={
+						<Card className="h-96">
+							<CardContent className="p-6">
+								<div className="animate-pulse space-y-4">
+									<div className="h-4 bg-gray-200 rounded w-2/3"></div>
+									<div className="h-32 bg-gray-200 rounded"></div>
+									<div className="grid grid-cols-2 gap-4">
+										<div className="h-16 bg-gray-200 rounded"></div>
+										<div className="h-16 bg-gray-200 rounded"></div>
+									</div>
+								</div>
+							</CardContent>
+						</Card>
+					}>
+						<ProgressChart 
+							data={{
+								weeklyGoal: 5,
+								currentProgress: stats.completedWorkouts,
+								lastWeekProgress: Math.max(0, stats.completedWorkouts - 1),
+								streak: stats.currentStreak,
+								currentWeight: stats.currentWeight,
+								weightGoal: stats.weightGoal,
+								weightChange: stats.weightChange,
+								currentBodyFat: 18.5,
+								bodyFatGoal: 15.0,
+								bodyFatChange: -1.2,
+								progressHistory: weeklyProgress.map((week, index) => ({
+									date: week.date,
+									weight: stats.currentWeight + (Math.random() - 0.5) * 2,
+									bodyFat: 20 - index * 0.3,
+									muscle: 58 + index * 0.2,
+									workouts: week.workouts
+								}))
+							}}
+						/>
+					</Suspense>
+				</div>
+
+				{/* Upcoming Workout - Próximos Entrenamientos */}
+				<div className="lg:col-span-1">
+					<Suspense fallback={
+						<Card className="h-96">
+							<CardContent className="p-6">
+								<div className="animate-pulse space-y-4">
+									<div className="h-4 bg-gray-200 rounded w-1/2"></div>
+									<div className="space-y-3">
+										<div className="h-12 bg-gray-200 rounded"></div>
+										<div className="h-12 bg-gray-200 rounded"></div>
+										<div className="h-12 bg-gray-200 rounded"></div>
+									</div>
+									<div className="h-10 bg-gray-200 rounded w-full mt-6"></div>
+								</div>
+							</CardContent>
+						</Card>
+					}>
+						<UpcomingWorkout isLoading={isLoading} />
+					</Suspense>
+				</div>
+			</div>
+
+			{/* Legacy Daily Progress Section - Mantenido para compatibilidad */}
 			<div className="grid grid-cols-1 lg:grid-cols-3 mobile-gap mobile-gap">
 				{/* Daily Progress */}
 				<div className="lg:col-span-2">
 					<Card className="mobile-card">
 						<CardContent className="p-4 sm:p-6">
 							<div className="flex items-center gap-2 mobile-gap">
-					<div className="w-5 h-5 sm:w-6 sm:h-6 bg-blue-100 rounded-full flex items-center justify-center">
-						<Target className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" />
-					</div>
-					<h3 className="responsive-subheading font-semibold text-gray-900">Progreso Diario</h3>
+				<div className="w-5 h-5 sm:w-6 sm:h-6 bg-blue-100 rounded-full flex items-center justify-center">
+					<Target className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" />
 				</div>
+				<h3 className="responsive-subheading font-semibold text-gray-900">Progreso Diario</h3>
+			</div>
 					
 					<div className="grid grid-cols-1 sm:grid-cols-3 mobile-gap">
 						{/* Steps */}
@@ -459,6 +549,7 @@ export default function FitnessDashboard() {
 						<span className="responsive-caption text-gray-400">Ajustes</span>
 					</Link>
 				</div>
+			</div>
 			</div>
 		</div>
 	)

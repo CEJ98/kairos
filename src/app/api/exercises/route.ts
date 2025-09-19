@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { exerciseCreateSchema } from '@/lib/validations/api-schemas'
 
 import { logger } from '@/lib/logger'
 // GET /api/exercises - Obtener ejercicios
@@ -108,25 +109,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
     }
 
-    const body = await req.json()
-    const {
-      name,
-      description,
-      instructions,
-      tips,
-      category,
-      muscleGroup,
-      equipment,
-      difficulty,
-      imageUrl,
-      videoUrl,
-      gifUrl
-    } = body
+    let parsed
+    try {
+      const json = await req.json()
+      parsed = exerciseCreateSchema.safeParse(json)
+    } catch {
+      return NextResponse.json({ error: 'JSON inválido' }, { status: 400 })
+    }
 
-    // Validaciones
-    if (!name || !category || !muscleGroup || !difficulty) {
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: 'Campos obligatorios: name, category, muscleGroup, difficulty' },
+        { error: 'Validación fallida', details: parsed.error.flatten() },
         { status: 400 }
       )
     }
@@ -134,10 +127,7 @@ export async function POST(req: NextRequest) {
     // Verificar que el ejercicio no existe
     const existingExercise = await prisma.exercise.findFirst({
       where: {
-        name: {
-          equals: name,
-          mode: 'insensitive'
-        }
+        name: parsed.data.name
       }
     })
 
@@ -151,17 +141,17 @@ export async function POST(req: NextRequest) {
     // Crear ejercicio
     const exercise = await prisma.exercise.create({
       data: {
-        name,
-        description,
-        instructions,
-        tips,
-        category,
-        muscleGroups: muscleGroup,
-        equipments: equipment || [],
-        difficulty,
-        imageUrl,
-        videoUrl,
-        gifUrl,
+        name: parsed.data.name,
+        description: parsed.data.description,
+        instructions: parsed.data.instructions,
+        tips: parsed.data.tips,
+        category: parsed.data.category,
+        muscleGroups: JSON.stringify(parsed.data.muscleGroups),
+        equipments: JSON.stringify(parsed.data.equipments || []),
+        difficulty: parsed.data.difficulty,
+        imageUrl: parsed.data.imageUrl,
+        videoUrl: parsed.data.videoUrl,
+        gifUrl: parsed.data.gifUrl,
         isActive: true
       }
     })

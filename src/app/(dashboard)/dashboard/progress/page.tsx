@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -23,12 +23,15 @@ import {
   Zap
 } from 'lucide-react'
 import Link from 'next/link'
+import { useMetricSeries, useMeasurements } from '@/hooks/use-measurements'
+import { LineChart } from '@/components/progress/line-chart'
+import { MeasurementTable } from '@/components/progress/measurement-table'
 
 export default function ProgressPage() {
   const [selectedPeriod, setSelectedPeriod] = useState('month')
   const [selectedMetric, setSelectedMetric] = useState('workouts')
 
-  // Mock data - en producción vendría de APIs
+  // Datos de progreso (temporal/mock para tarjetas existentes)
   const progressData = {
     overview: {
       totalWorkouts: 42,
@@ -150,6 +153,21 @@ export default function ProgressPage() {
     return 'text-red-600'
   }
 
+  // Series reales desde API: peso y %grasa
+  const { data: weightSeries } = useMetricSeries('weight', { limit: 90 })
+  const { data: fatSeries } = useMetricSeries('bodyFat', { limit: 90 })
+  const { data: all } = useMeasurements({ limit: 50 })
+
+  const weightPoints = useMemo(
+    () => (weightSeries?.measurements || []).map(p => ({ date: p.measuredAt, value: p.value })),
+    [weightSeries]
+  )
+  const fatPoints = useMemo(
+    () => (fatSeries?.measurements || []).map(p => ({ date: p.measuredAt, value: p.value })),
+    [fatSeries]
+  )
+
+  // Calcular última/previa medición para tarjetas “meta corporal” (fallback a mock si vacío)
   const latestMeasurement = progressData.bodyMeasurements[0]
   const previousMeasurement = progressData.bodyMeasurements[1]
   
@@ -158,7 +176,7 @@ export default function ProgressPage() {
   const muscleChange = latestMeasurement.muscle - previousMeasurement.muscle
 
   return (
-    <div className="mobile-spacing">
+    <div className="page-container mobile-spacing">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mobile-gap">
         <div className="min-w-0">
@@ -331,6 +349,41 @@ export default function ProgressPage() {
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 mobile-gap">
+        {/* Line charts reales */}
+        <Card className="mobile-card">
+          <CardHeader className="mobile-spacing-x">
+            <CardTitle className="responsive-subheading flex items-center gap-2">
+              <Weight className="h-4 w-4 text-emerald-600" /> Peso corporal
+            </CardTitle>
+            <CardDescription className="responsive-caption">Evolución en el tiempo</CardDescription>
+          </CardHeader>
+          <CardContent className="mobile-spacing-x">
+            <LineChart
+              title={undefined}
+              data={weightPoints}
+              color="#10b981"
+              valueFormatter={(v) => `${v.toFixed(1)} kg`}
+            />
+          </CardContent>
+        </Card>
+
+        <Card className="mobile-card">
+          <CardHeader className="mobile-spacing-x">
+            <CardTitle className="responsive-subheading flex items-center gap-2">
+              <BarChart3 className="h-4 w-4 text-blue-600" /> % Grasa corporal
+            </CardTitle>
+            <CardDescription className="responsive-caption">Evolución en el tiempo</CardDescription>
+          </CardHeader>
+          <CardContent className="mobile-spacing-x">
+            <LineChart
+              title={undefined}
+              data={fatPoints}
+              color="#3b82f6"
+              valueFormatter={(v) => `${v.toFixed(1)} %`}
+            />
+          </CardContent>
+        </Card>
+
         {/* Recent Workouts */}
         <Card className="mobile-card">
           <CardHeader className="p-4 sm:p-6">
@@ -561,6 +614,26 @@ export default function ProgressPage() {
               </div>
             ))}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Tabla de mediciones reales */}
+      <Card className="mobile-card">
+        <CardHeader className="mobile-spacing-x">
+          <CardTitle className="responsive-subheading">Historial de mediciones</CardTitle>
+          <CardDescription className="responsive-caption">Últimas mediciones registradas</CardDescription>
+        </CardHeader>
+        <CardContent className="mobile-spacing-x">
+          <MeasurementTable
+            rows={(all?.measurements || []).map((m: any) => ({
+              id: m.id,
+              measuredAt: m.measuredAt,
+              weight: m.weight ?? null,
+              bodyFat: m.bodyFat ?? null,
+              waist: m.waist ?? null,
+              notes: m.notes ?? null,
+            }))}
+          />
         </CardContent>
       </Card>
     </div>

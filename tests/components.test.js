@@ -6,7 +6,7 @@ jest.mock('next-auth/react')
 jest.mock('next/navigation')
 
 const { useSession } = require('next-auth/react')
-const { useRouter } = require('next/navigation')
+const navigation = require('next/navigation')
 
 // Mock components for testing
 const MockButton = ({ children, onClick, href, disabled, className }) => {
@@ -116,22 +116,22 @@ const TrainerDashboardComponent = () => {
 }
 
 describe('Navigation Components', () => {
-	const mockPush = jest.fn()
+    const mockPush = jest.fn()
 
-	beforeEach(() => {
-		useRouter.mockReturnValue({
-			push: mockPush,
-			replace: jest.fn(),
-			prefetch: jest.fn(),
-			back: jest.fn(),
-			forward: jest.fn(),
-			refresh: jest.fn(),
-			pathname: '/',
-			query: {},
-			asPath: '/'
-		})
-		mockPush.mockClear()
-	})
+    beforeEach(() => {
+        jest.spyOn(navigation, 'useRouter').mockReturnValue({
+            push: mockPush,
+            replace: jest.fn(),
+            prefetch: jest.fn(),
+            back: jest.fn(),
+            forward: jest.fn(),
+            refresh: jest.fn(),
+            pathname: '/',
+            query: {},
+            asPath: '/'
+        })
+        mockPush.mockClear()
+    })
 
 	describe('NavigationComponent', () => {
 		it('renders public navigation links when not authenticated', () => {

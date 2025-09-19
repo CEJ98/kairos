@@ -56,21 +56,17 @@ export default function BillingPage() {
     setIsLoading(planType)
     
     try {
-      // En producción: crear suscripción en Stripe
-      const response = await fetch('/api/stripe/create-subscription', {
+      const response = await fetch('/api/billing/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          priceId: (PRICING_PLANS[planType as keyof typeof PRICING_PLANS] as any).stripeProductId || 'price_demo',
-          trialDays: planType !== 'FREE' ? 14 : undefined
+          plan: planType,
         })
       })
 
       if (response.ok) {
-        const { clientSecret, subscriptionId } = await response.json()
-        
-        // Redirigir a Stripe Checkout o manejar Payment Intent
-        window.location.href = `/checkout?client_secret=${clientSecret}&plan=${planType}`
+        const { url } = await response.json()
+        if (url) window.location.href = url
       } else {
         toast.error('Error al procesar el pago')
       }
@@ -111,7 +107,7 @@ export default function BillingPage() {
   }
 
   return (
-    <div className="mobile-spacing mobile-gap-y">
+    <div className="page-container mobile-spacing mobile-gap-y">
       {/* Header */}
       <div className="text-center mobile-gap-y">
         <h1 className="responsive-heading font-bold text-gray-900">Suscripción y Facturación</h1>
@@ -246,6 +242,41 @@ export default function BillingPage() {
           )}
         </CardContent>
       </Card>
+
+      {isTrainer && (
+        <Card className="mobile-card">
+          <CardHeader className="mobile-spacing-x">
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-4 w-4" /> Estado de suscripción (Entrenador)
+            </CardTitle>
+            <CardDescription className="responsive-caption">
+              Consulta tu estado actual de suscripción en Stripe
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="mobile-spacing-x mobile-gap-y">
+            <Button
+              variant="outline"
+              className="w-fit"
+              onClick={async () => {
+                try {
+                  const res = await fetch('/api/billing/status')
+                  const data = await res.json()
+                  if (data?.subscription) {
+                    const sub = data.subscription
+                    toast.success(`Plan: ${sub.planType} • Estado: ${sub.status}`)
+                  } else {
+                    toast('Sin suscripción activa')
+                  }
+                } catch {
+                  toast.error('No se pudo obtener el estado')
+                }
+              }}
+            >
+              Actualizar estado
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Pricing Plans */}
       <div>

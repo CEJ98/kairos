@@ -175,7 +175,7 @@ async function main() {
       name: 'Usuario Demo',
       role: 'CLIENT',
       isVerified: true,
-      password: 'demo123', // Para desarrollo, sin hash
+      password: 'demo1234', // Para desarrollo, sin hash
       clientProfiles: {
         create: {
           age: 25,
@@ -278,18 +278,46 @@ async function main() {
     }
   })
 
+  // Crear mediciones de demostración para el usuario demo
+  console.log('📏 Creando mediciones de demostración...')
+  
+  const measurementDates = [
+    new Date('2024-01-01'),
+    new Date('2024-02-01'),
+    new Date('2024-03-01'),
+  ]
+
+  for (let i = 0; i < measurementDates.length; i++) {
+    await prisma.measurement.create({
+      data: {
+        userId: demoUser.id,
+        peso: 70.0 - (i * 1.5), // Simulando pérdida de peso progresiva
+        grasa: 18.0 - (i * 0.8), // Reducción de grasa corporal
+        cintura: 85.0 - (i * 1.2), // Reducción de cintura
+        fecha: measurementDates[i],
+        notas: `Medición ${i + 1} - Progreso ${i === 0 ? 'inicial' : i === 1 ? 'intermedio' : 'actual'}`,
+      }
+    })
+  }
+
   console.log('✅ Seed completado exitosamente!')
   console.log('📊 Datos creados:')
   console.log(`- ${exercises.length} ejercicios`)
   console.log('- 4 usuarios (admin, entrenador, cliente, demo)')
   console.log('- 1 rutina de ejemplo')
   console.log('- 1 suscripción activa')
+  console.log('- 3 mediciones de demostración')
   console.log('')
   console.log('🔐 Credenciales de prueba:')
-  console.log('Demo: demo@kairos.com / demo123')
+  console.log('Demo: demo@kairos.com / demo1234')
   console.log('Admin: admin@kairosfit.com')
   console.log('Entrenador: trainer@kairosfit.com')
   console.log('Cliente: client@kairosfit.com')
+  console.log('')
+  console.log('📏 Mediciones demo creadas:')
+  console.log('- Enero: 70kg, 18% grasa, 85cm cintura')
+  console.log('- Febrero: 68.5kg, 17.2% grasa, 83.8cm cintura')
+  console.log('- Marzo: 67kg, 16.4% grasa, 82.6cm cintura')
 }
 
 main()

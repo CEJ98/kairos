@@ -5,7 +5,13 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
-// Mock modules before imports
+// Mock bcryptjs (usar hoisted para evitar problemas de inicialización)
+const { mockCompare } = vi.hoisted(() => ({ mockCompare: vi.fn() }))
+vi.mock('bcryptjs', () => ({
+  compare: mockCompare,
+  hash: vi.fn(() => Promise.resolve('$2a$12$hashedpassword'))
+}))
+
 vi.mock('@/lib/db', () => ({
   prisma: {
     user: {
@@ -14,13 +20,8 @@ vi.mock('@/lib/db', () => ({
   },
 }))
 
-vi.mock('bcryptjs', () => ({
-  compare: vi.fn(),
-}))
-
-import { authOptions } from '@/lib/auth'
+import { authOptions, authorizeCredentialsForTest } from '@/lib/auth'
 import { prisma } from '@/lib/db'
-import { compare } from 'bcryptjs'
 
 describe('Authentication Bypass Prevention', () => {
   beforeEach(() => {
@@ -28,6 +29,14 @@ describe('Authentication Bypass Prevention', () => {
   })
 
   describe('Credentials Provider Security', () => {
+    it('should mock bcrypt compare correctly', async () => {
+      // Simple test to verify mock is working
+      mockCompare.mockResolvedValue(true)
+      const result = await mockCompare('test', 'hash')
+      expect(result).toBe(true)
+      expect(mockCompare).toHaveBeenCalledWith('test', 'hash')
+    })
+
     it('should reject login when user has no password', async () => {
       // Mock user without password
       vi.mocked(prisma.user.findUnique).mockResolvedValue({
@@ -38,14 +47,17 @@ describe('Authentication Bypass Prevention', () => {
         name: 'Test User',
         avatar: null,
         isVerified: false,
+        isOnline: false,
+        lastSeen: new Date(),
+        resetToken: null,
+        resetTokenExpiry: null,
         createdAt: new Date(),
         updatedAt: new Date(),
         trainerProfile: null,
         clientProfiles: [],
       })
 
-      const credentialsProvider = authOptions.providers![0] as any
-      const result = await credentialsProvider.authorize({
+      const result = await authorizeCredentialsForTest({
         email: 'test@example.com',
         password: 'any-password',
       })
@@ -71,6 +83,10 @@ describe('Authentication Bypass Prevention', () => {
         name: 'Test User',
         avatar: null,
         isVerified: false,
+        isOnline: false,
+        lastSeen: new Date(),
+        resetToken: null,
+        resetTokenExpiry: null,
         createdAt: new Date(),
         updatedAt: new Date(),
         trainerProfile: null,
@@ -78,10 +94,9 @@ describe('Authentication Bypass Prevention', () => {
       })
 
       // Mock bcrypt to return false for "password"
-      vi.mocked(compare).mockResolvedValue(false)
+      mockCompare.mockResolvedValue(false)
 
-      const credentialsProvider = authOptions.providers![0] as any
-      const result = await credentialsProvider.authorize({
+      const result = await authorizeCredentialsForTest({
         email: 'test@example.com',
         password: 'password', // This should not work anymore
       })
@@ -139,7 +154,7 @@ describe('Authentication Bypass Prevention', () => {
     })
 
     it('should only authenticate with valid password hash', async () => {
-      const hashedPassword = '$2a$12$fakehash' // Mock bcrypt hash
+      const hashedPassword = '$2a$12$fakehash'
 
       vi.mocked(prisma.user.findUnique).mockResolvedValue({
         id: 'test-user-id',
@@ -149,6 +164,10 @@ describe('Authentication Bypass Prevention', () => {
         avatar: null,
         role: 'CLIENT',
         isVerified: false,
+        isOnline: false,
+        lastSeen: new Date(),
+        resetToken: null,
+        resetTokenExpiry: null,
         createdAt: new Date(),
         updatedAt: new Date(),
         trainerProfile: null,
@@ -156,16 +175,15 @@ describe('Authentication Bypass Prevention', () => {
       })
 
       // Mock bcrypt compare to return false for wrong password
-      vi.mocked(compare).mockResolvedValue(false)
+      mockCompare.mockResolvedValue(false)
 
-      const credentialsProvider = authOptions.providers![0] as any
-      const result = await credentialsProvider.authorize({
+      const result = await authorizeCredentialsForTest({
         email: 'test@example.com',
         password: 'wrongpassword',
       })
 
       expect(result).toBeNull()
-      expect(compare).toHaveBeenCalledWith('wrongpassword', hashedPassword)
+      expect(mockCompare).toHaveBeenCalledWith('wrongpassword', hashedPassword)
     })
 
     it('should authenticate successfully with correct password', async () => {
@@ -179,6 +197,10 @@ describe('Authentication Bypass Prevention', () => {
         avatar: null,
         role: 'CLIENT',
         isVerified: false,
+        isOnline: false,
+        lastSeen: new Date(),
+        resetToken: null,
+        resetTokenExpiry: null,
         createdAt: new Date(),
         updatedAt: new Date(),
         trainerProfile: null,
@@ -186,10 +208,9 @@ describe('Authentication Bypass Prevention', () => {
       })
 
       // Mock bcrypt compare to return true for correct password
-      vi.mocked(compare).mockResolvedValue(true)
+      mockCompare.mockResolvedValue(true)
 
-      const credentialsProvider = authOptions.providers![0] as any
-      const result = await credentialsProvider.authorize({
+      const result = await authorizeCredentialsForTest({
         email: 'test@example.com',
         password: 'correctpassword',
       })
@@ -201,14 +222,13 @@ describe('Authentication Bypass Prevention', () => {
         image: '',
         role: 'CLIENT',
       })
-      expect(compare).toHaveBeenCalledWith('correctpassword', hashedPassword)
+      expect(mockCompare).toHaveBeenCalledWith('correctpassword', hashedPassword)
     })
 
     it('should reject non-existent users', async () => {
       vi.mocked(prisma.user.findUnique).mockResolvedValue(null)
 
-      const credentialsProvider = authOptions.providers![0] as any
-      const result = await credentialsProvider.authorize({
+      const result = await authorizeCredentialsForTest({
         email: 'nonexistent@example.com',
         password: 'anypassword',
       })

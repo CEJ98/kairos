@@ -18,12 +18,12 @@ export default function HomePage() {
           </Link>
           
           <div className="flex gap-2 sm:gap-3">
-            <Link href="/signin">
+            <Link href="/es/signin">
               <Button variant="ghost" className="font-medium text-sm sm:text-base px-2 sm:px-4">
                 Iniciar Sesión
               </Button>
             </Link>
-            <Link href="/signup">
+            <Link href="/es/signup">
               <Button className="bg-gradient-to-r from-emerald-500 to-green-600 text-white hover:from-emerald-600 hover:to-green-700 shadow-lg font-medium text-sm sm:text-base px-3 sm:px-4">
                 Registrarse
               </Button>
@@ -52,7 +52,7 @@ export default function HomePage() {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/signup?role=client">
+              <Link href="/es/signup/client">
                 <Button 
                   size="xl" 
                   className="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-green-600 text-white hover:from-emerald-600 hover:to-green-700 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
@@ -61,7 +61,7 @@ export default function HomePage() {
                   <ArrowRight className="ml-2 h-5 w-5" aria-hidden="true" />
                 </Button>
               </Link>
-              <Link href="/signup?role=trainer">
+              <Link href="/es/signup/trainer">
                 <Button 
                   size="xl" 
                   variant="outline" 
@@ -137,7 +137,7 @@ export default function HomePage() {
           <p className="text-lg sm:text-xl text-green-100 mb-8 sm:mb-10 max-w-2xl mx-auto text-balance">
             Únete a miles de usuarios que ya están alcanzando sus objetivos con Kairos
           </p>
-          <Link href="/signup">
+          <Link href="/es/signup">
             <Button 
               size="xl" 
               className="w-full sm:w-auto bg-white text-emerald-600 hover:bg-gray-100 font-bold shadow-2xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 focus-visible"
@@ -205,9 +205,9 @@ export default function HomePage() {
             <p className="text-gray-400 text-sm sm:text-base">
               &copy; 2024 Kairos Fitness. Todos los derechos reservados. 
               <span className="mx-2">|</span>
-              <Link href="#" className="hover:text-white transition-colors focus-visible">Privacidad</Link>
+              <Link href="/privacy" className="hover:text-white transition-colors focus-visible">Privacidad</Link>
               <span className="mx-2">|</span>
-              <Link href="#" className="hover:text-white transition-colors focus-visible">Términos</Link>
+              <Link href="/terms" className="hover:text-white transition-colors focus-visible">Términos</Link>
             </p>
           </div>
         </div>

@@ -425,6 +425,305 @@ export class WorkoutEngine {
     return Math.min(1, muscleGroups.size / 6)
   }
 
+  /**
+   * Generate rest recommendations based on workout intensity
+   */
+  generateRestRecommendations(workout: any): {
+    minimumHours: number
+    activeRecovery: boolean
+    nutritionFocus: string[]
+  } {
+    const intensity = workout.intensity || 5
+    const type = workout.type || 'strength'
+    
+    let minimumHours = 24
+    let activeRecovery = false
+    let nutritionFocus = ['hydration']
+    
+    // High intensity workouts need more rest
+    if (intensity >= 8) {
+      minimumHours = 48
+      activeRecovery = true
+      nutritionFocus = ['protein', 'carbohydrates', 'hydration']
+    } else if (intensity >= 6) {
+      minimumHours = 36
+      activeRecovery = true
+      nutritionFocus = ['protein', 'hydration']
+    } else if (intensity <= 4) {
+      minimumHours = 12
+      activeRecovery = false
+      nutritionFocus = ['hydration']
+    }
+    
+    // Cardio workouts generally need less rest
+    if (type === 'cardio' && intensity < 7) {
+      minimumHours = Math.max(12, minimumHours - 12)
+    }
+    
+    return {
+      minimumHours,
+      activeRecovery,
+      nutritionFocus
+    }
+  }
+
+  /**
+   * Calculate calories burned during a workout
+   */
+  calculateCaloriesBurned(workout: any, userProfile: any): number {
+    const { weight = 70, age = 30, gender = 'male' } = userProfile
+    const { duration = 60, intensity = 'medium', type = 'strength' } = workout
+    
+    // MET values for different workout types and intensities
+    const metValues: { [key: string]: { [key: string]: number } } = {
+      strength: { low: 4.0, medium: 6.0, high: 8.0 },
+      cardio: { low: 8.0, medium: 12.0, high: 15.0 },
+      flexibility: { low: 2.5, medium: 3.0, high: 3.5 }
+    }
+    
+    const met = metValues[type]?.[intensity] || 6.0
+    
+    // Calories burned = MET * weight (kg) * duration (hours)
+    const durationHours = duration / 60
+    const caloriesBurned = met * weight * durationHours
+    
+    return Math.round(caloriesBurned)
+  }
+
+  /**
+   * Generate workout based on user preferences
+   */
+  async generateWorkout(preferences: any): Promise<any> {
+    const { fitnessLevel, goals, duration, availableTime, equipment, bodyParts } = preferences;
+    
+    // Handle both duration and availableTime
+    const workoutDuration = duration || availableTime;
+    
+    // Handle goals as array or string
+    const primaryGoal = Array.isArray(goals) ? goals[0] : goals;
+    
+    // Validate preferences
+    if (!fitnessLevel || !goals || !workoutDuration) {
+      throw new Error('Missing required preferences: fitnessLevel, goals, and duration are required');
+    }
+    
+    if (workoutDuration < 15 || workoutDuration > 180) {
+      throw new Error('Duration must be between 15 and 180 minutes');
+    }
+    
+    // Generate basic workout structure
+    const workout = {
+      id: `workout_${Date.now()}`,
+      name: `${primaryGoal} Workout`,
+      duration: workoutDuration,
+      estimatedDuration: workoutDuration,
+      difficulty: fitnessLevel,
+      fitnessLevel,
+      exercises: this.generateExercisesForGoals(primaryGoal, fitnessLevel, equipment || [], bodyParts || [])
+    };
+    
+    return workout;
+  }
+
+  /**
+   * Generate exercises based on goals and fitness level
+   */
+  private generateExercisesForGoals(goals: string, fitnessLevel: string, equipment: string[], bodyParts: string[]): any[] {
+    const exercises: any[] = [];
+    
+    // Basic exercise templates based on goals
+    const exerciseTemplates = {
+      strength: [
+        { name: 'Push-ups', sets: 3, reps: 10, type: 'bodyweight' },
+        { name: 'Squats', sets: 3, reps: 12, type: 'bodyweight' },
+        { name: 'Plank', sets: 3, reps: 30, type: 'bodyweight' }
+      ],
+      muscle_gain: [
+        { name: 'Push-ups', sets: 4, reps: 8, type: 'bodyweight' },
+        { name: 'Squats', sets: 4, reps: 10, type: 'bodyweight' },
+        { name: 'Pull-ups', sets: 3, reps: 6, type: 'bodyweight' }
+      ],
+      general_fitness: [
+        { name: 'Jumping Jacks', sets: 3, reps: 15, type: 'bodyweight' },
+        { name: 'Push-ups', sets: 2, reps: 8, type: 'bodyweight' },
+        { name: 'Squats', sets: 2, reps: 10, type: 'bodyweight' }
+      ],
+      cardio: [
+        { name: 'Jumping Jacks', sets: 3, reps: 20, type: 'bodyweight' },
+        { name: 'High Knees', sets: 3, reps: 30, type: 'bodyweight' },
+        { name: 'Burpees', sets: 2, reps: 8, type: 'bodyweight' }
+      ],
+      flexibility: [
+        { name: 'Forward Fold', sets: 1, reps: 30, type: 'stretch' },
+        { name: 'Cat-Cow', sets: 1, reps: 10, type: 'stretch' },
+        { name: 'Child\'s Pose', sets: 1, reps: 60, type: 'stretch' }
+      ]
+    };
+    
+    const selectedExercises = exerciseTemplates[goals as keyof typeof exerciseTemplates] || exerciseTemplates.strength;
+    
+    // Adjust difficulty based on fitness level
+    selectedExercises.forEach(exercise => {
+      const adjustedExercise = { ...exercise };
+      
+      if (fitnessLevel === 'beginner') {
+        adjustedExercise.sets = Math.max(1, adjustedExercise.sets - 1);
+        adjustedExercise.reps = Math.max(8, Math.floor(adjustedExercise.reps * 0.8));
+      } else if (fitnessLevel === 'advanced') {
+        adjustedExercise.sets += 1;
+        adjustedExercise.reps = Math.floor(adjustedExercise.reps * 1.3);
+      }
+      
+      exercises.push(adjustedExercise);
+    });
+    
+    return exercises;
+  }
+
+  /**
+   * Calculate workout intensity based on exercises and parameters
+   */
+  calculateWorkoutIntensity(workout: any): number {
+    if (!workout.exercises || workout.exercises.length === 0) {
+      return 0;
+    }
+    
+    let totalIntensity = 0;
+    let exerciseCount = 0;
+    const exercises: any[] = workout.exercises;
+    
+    exercises.forEach((exercise: any) => {
+      const { sets = 1, reps = 1, weight = 0, restTime = 60 } = exercise;
+      
+      // Calculate intensity on a 0-10 scale
+      let intensity = 0;
+      
+      // Base intensity from sets and reps
+      intensity += (sets * reps) / 10;
+      
+      // Add weight factor (normalized)
+      if (weight > 0) {
+        intensity += Math.min(weight / 50, 3); // Cap weight contribution
+      }
+      
+      // Rest time factor (less rest = higher intensity)
+      const restFactor = Math.max(0, (120 - restTime) / 60);
+      intensity += restFactor;
+      
+      totalIntensity += Math.min(intensity, 10); // Cap at 10
+      exerciseCount++;
+    });
+    
+    // Return average intensity across all exercises, capped at 10
+    return Math.min(exerciseCount > 0 ? totalIntensity / exerciseCount : 0, 10);
+  }
+
+  /**
+   * Progress workout based on performance data
+   */
+  progressWorkout(currentWorkout: any, performanceData: any): any {
+    const { completedSets, avgRpe, formQuality, completionRate, avgRPE, formScore } = performanceData;
+    const adjustedWorkout = JSON.parse(JSON.stringify(currentWorkout)); // Deep copy
+    
+    // Normalize performance data (support both naming conventions)
+    const rpe = avgRpe || avgRPE || 5;
+    const form = formQuality || formScore || 5;
+    const completion = completionRate || (completedSets ? completedSets / (currentWorkout.exercises?.[0]?.sets || 3) : 1);
+    
+    // Determine progression factor based on performance
+    let progressionFactor = 1.0;
+    
+    if (completion >= 0.9 && rpe <= 7 && form >= 8) {
+      // Good performance - increase difficulty
+      progressionFactor = 1.05;
+    } else if (completion < 0.7 || rpe >= 9 || form < 6) {
+      // Poor performance - decrease difficulty
+      progressionFactor = 0.95;
+    }
+    
+    // Apply progression to exercises
+    if (adjustedWorkout.exercises) {
+      adjustedWorkout.exercises.forEach((exercise: any) => {
+        if (exercise.weight) {
+          exercise.weight = Math.round(exercise.weight * progressionFactor);
+        }
+        if (exercise.reps && progressionFactor > 1.0) {
+          exercise.reps = Math.min(exercise.reps + 1, 15);
+        } else if (exercise.reps && progressionFactor < 1.0) {
+          exercise.reps = Math.max(exercise.reps - 1, 5);
+        }
+      });
+    }
+    
+    return adjustedWorkout;
+  }
+
+  /**
+   * Validate exercise form based on movement data
+   */
+  validateExerciseForm(exerciseData: any): {
+    isValid: boolean;
+    corrections: string[];
+    score: number;
+  } {
+    const { movementPattern, reps, weight, duration, form_cues } = exerciseData
+    const corrections: string[] = []
+    let score = 8
+    
+    // Check for form cues
+    if (form_cues && Array.isArray(form_cues)) {
+      form_cues.forEach((cue: string) => {
+        // Positive form cues (good form indicators)
+        if (['chest_to_ground', 'straight_body', 'controlled_movement'].includes(cue)) {
+          score += 1 // Bonus for good form
+        } else {
+          // Negative form cues (problems)
+          switch (cue) {
+            case 'knees_caving':
+              corrections.push('Keep knees aligned with toes')
+              score -= 3
+              break
+            case 'forward_lean':
+              corrections.push('Maintain upright torso position')
+              score -= 2
+              break
+            case 'incomplete_depth':
+              corrections.push('Achieve full range of motion')
+              score -= 2
+              break
+            default:
+              corrections.push('Check exercise form')
+              score -= 1
+          }
+        }
+      })
+    }
+    
+    // Check for basic form issues
+    if (movementPattern && movementPattern.speed > 2.0) {
+      corrections.push('Movement too fast - focus on controlled motion')
+      score -= 2
+    }
+    
+    if (movementPattern && movementPattern.range < 0.7) {
+      corrections.push('Incomplete range of motion')
+      score -= 1
+    }
+    
+    if (weight && reps && (weight * reps > 1000)) {
+      corrections.push('Weight may be too heavy for proper form')
+      score -= 3
+    }
+    
+    const isValid = score >= 5
+    
+    return {
+      isValid,
+      corrections,
+      score: Math.max(0, score)
+    }
+  }
+
   private async analyzeExerciseProgression(
     exerciseId: string,
     performances: any[]

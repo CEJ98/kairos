@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { logger } from './logger'
 
 interface ImageOptimizerConfig {
 	// Calidad de imagen por defecto
@@ -304,9 +303,9 @@ export const preloadImage = (src: string): Promise<void> => {
 export const preloadImages = async (sources: string[]): Promise<void> => {
 	try {
 		await Promise.all(sources.map(preloadImage))
-		logger.info(`Precargadas ${sources.length} imágenes`, { count: sources.length }, 'IMAGE_OPTIMIZER')
+		console.log(`✅ Precargadas ${sources.length} imágenes`)
 	} catch (error) {
-		logger.warn('Error precargando imágenes', error, 'IMAGE_OPTIMIZER')
+		console.warn('❌ Error precargando imágenes:', error)
 	}
 }
 

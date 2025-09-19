@@ -1,34 +1,66 @@
 'use client'
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
+import { useMemo, useState } from 'react'
 import Image from 'next/image'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Progress } from '@/components/ui/progress'
 import { 
   ChevronLeft,
   ChevronRight,
-  Search,
-  Camera,
   Play,
   CheckCircle,
   Clock,
-  Zap,
-  Target,
   Activity,
-  Flame,
   Footprints,
   Expand,
+  Home,
+  Settings,
   Dumbbell,
   Bird,
-  Home,
-  Settings
-} from "lucide-react"
-import Link from "next/link"
+  Target,
+  Zap
+} from 'lucide-react'
+import Link from 'next/link'
+import { WeeklyCalendar } from '@/components/calendar/weekly-calendar'
+import { toast } from 'sonner'
+import { useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 
 export default function CalendarPage() {
+	const searchParams = useSearchParams()
+	const highlightWorkoutId = searchParams?.get('workoutId') || undefined
   const [currentMonth, setCurrentMonth] = useState(new Date())
+  const [events, setEvents] = useState<{ id: string; workoutId: string; title: string; date: string }[]>([])
+  useEffect(() => {
+    const params = new URLSearchParams()
+    const now = new Date()
+    const start = new Date(now)
+    start.setDate(now.getDate() - now.getDay() + 1) // lunes
+    const end = new Date(start)
+    end.setDate(start.getDate() + 6)
+    params.set('start', start.toISOString().slice(0, 10))
+    params.set('end', end.toISOString().slice(0, 10))
+    fetch(`/api/calendar/events?${params.toString()}`)
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(json => setEvents(json.events || []))
+      .catch(() => setEvents([]))
+  }, [])
+
+  async function handleMove(id: string, newISODate: string) {
+    try {
+      const res = await fetch(`/api/calendar/events`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, date: newISODate }),
+      })
+      if (!res.ok) throw new Error('No se pudo guardar el cambio')
+      setEvents(prev => prev.map(ev => ev.id === id ? { ...ev, date: newISODate } : ev))
+      toast.success('Evento reprogramado')
+    } catch (e: any) {
+      toast.warning('No se pudo persistir el movimiento')
+    }
+  }
   
   // Mock data - en producción vendría de APIs
   const trainingDays = [
@@ -108,6 +140,7 @@ export default function CalendarPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <div className="page-container">
       {/* Header */}
       <div className="bg-white px-4 sm:px-6 py-4 sm:py-6">
         <div className="flex items-center justify-between mb-4 sm:mb-6">
@@ -122,62 +155,9 @@ export default function CalendarPage() {
           </Button>
         </div>
 
-        {/* Calendar */}
+        {/* Weekly Calendar */}
         <div className="mb-4 sm:mb-6">
-          <div className="flex items-center justify-between mb-3 sm:mb-4">
-            <Button variant="ghost" size="sm" onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))} className="mobile-button">
-              <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
-            </Button>
-            <h2 className="responsive-subheading font-semibold text-gray-900">
-              {monthNames[currentMonth.getMonth()]}
-            </h2>
-            <Button variant="ghost" size="sm" onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))} className="mobile-button">
-              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
-            </Button>
-          </div>
-
-          {/* Day names */}
-          <div className="grid grid-cols-7 gap-1 mb-2">
-            {dayNames.map(day => (
-              <div key={day} className="text-center responsive-caption font-medium text-gray-500 py-1 sm:py-2">
-                {day}
-              </div>
-            ))}
-          </div>
-
-          {/* Calendar grid */}
-          <div className="grid grid-cols-7 gap-1">
-            {getDaysInMonth(currentMonth).map((day, index) => {
-              const trainingDay = day ? getTrainingDay(day) : null
-              const isToday = day === new Date().getDate() && currentMonth.getMonth() === new Date().getMonth()
-              
-              return (
-                <div
-                  key={index}
-                  className={`aspect-square flex flex-col items-center justify-center responsive-caption relative touch-target ${
-                    day ? 'cursor-pointer hover:bg-gray-100' : ''
-                  } ${isToday ? 'bg-blue-100 rounded-full' : ''}`}
-                >
-                  {day && (
-                    <>
-                      <span className={`${isToday ? 'font-bold text-blue-600' : 'text-gray-900'}`}>
-                        {day}
-                      </span>
-                      {trainingDay && (
-                        <div className="absolute bottom-0.5 sm:bottom-1">
-                          <div className={`w-4 h-4 sm:w-6 sm:h-6 rounded-full flex items-center justify-center ${
-                            trainingDay.completed ? 'bg-green-100' : 'bg-gray-200'
-                          }`}>
-                            {getTrainingIcon(trainingDay.type)}
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              )
-            })}
-          </div>
+          <WeeklyCalendar events={events} onMove={handleMove} highlightWorkoutId={highlightWorkoutId} />
         </div>
 
         {/* Daily Stats */}
@@ -217,7 +197,7 @@ export default function CalendarPage() {
             </div>
           </div>
 
-          <div className="mobile-spacing">
+          <div className="mobile-spacing content-visibility-auto">
             {todayExercises.map((exercise) => (
               <Card key={exercise.id} className="bg-white border-0 shadow-sm mobile-card">
                 <CardContent className="p-3 sm:p-4">
@@ -229,7 +209,7 @@ export default function CalendarPage() {
                         width={32}
                         height={32}
                         className="w-6 h-6 sm:w-8 sm:h-8 rounded object-cover"
-                        priority={false}
+                        sizes="(max-width: 768px) 24px, 32px"
                       />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -301,6 +281,7 @@ export default function CalendarPage() {
 
       {/* Spacer para la navegación inferior */}
       <div className="h-20"></div>
+      </div>
     </div>
   )
 }

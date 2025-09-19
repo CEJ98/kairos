@@ -4,7 +4,6 @@ import { authOptions } from '@/lib/auth'
 import { stripe } from '@/lib/stripe'
 import { prisma } from '@/lib/db'
 
-import { logger } from '@/lib/logger'
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -94,7 +93,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(subscriptionData)
 
   } catch (error) {
-    logger.error('Error verifying payment:', error, 'API')
+    console.error('Error verifying payment:', error)
     return NextResponse.json(
       { error: 'Error al verificar el pago' },
       { status: 500 }

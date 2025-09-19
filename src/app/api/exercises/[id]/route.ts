@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { Prisma } from '@prisma/client'
 
 import { logger } from '@/lib/logger'
 // GET /api/exercises/[id] - Obtener ejercicio específico
@@ -90,10 +91,7 @@ export async function PUT(
     if (name && name !== existingExercise.name) {
       const duplicateExercise = await prisma.exercise.findFirst({
         where: {
-          name: {
-            equals: name,
-            mode: 'insensitive'
-          },
+          name: name,
           id: {
             not: id
           }

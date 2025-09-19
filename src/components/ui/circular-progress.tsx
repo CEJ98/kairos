@@ -35,6 +35,7 @@ export function CircularProgress({
             stroke="rgb(229, 231, 235)"
             strokeWidth={strokeWidth}
             fill="transparent"
+            className="dark:stroke-gray-700"
           />
           <circle
             cx={size / 2}
@@ -52,24 +53,24 @@ export function CircularProgress({
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center">
             {showValue && (
-              <div className="text-2xl font-bold">{value.toLocaleString()}</div>
+              <div className="text-2xl font-bold dark:text-gray-100">{value.toLocaleString()}</div>
             )}
             {max && (
-              <div className="text-xs text-muted-foreground">
+              <div className="text-xs text-muted-foreground dark:text-gray-400">
                 /{max.toLocaleString()}
               </div>
             )}
             {!showValue && (
-              <div className="text-xl font-bold">{percentage}%</div>
+              <div className="text-xl font-bold dark:text-gray-100">{percentage}%</div>
             )}
           </div>
         </div>
       </div>
       {(label || subtitle) && (
         <div className="mt-3 text-center">
-          {label && <div className="font-semibold text-sm">{label}</div>}
+          {label && <div className="font-semibold text-sm dark:text-gray-200">{label}</div>}
           {subtitle && (
-            <div className="text-xs text-muted-foreground mt-1">{subtitle}</div>
+            <div className="text-xs text-muted-foreground dark:text-gray-400 mt-1">{subtitle}</div>
           )}
         </div>
       )}

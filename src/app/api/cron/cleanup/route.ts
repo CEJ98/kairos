@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-import { logger } from '@/lib/logger'
 /**
  * Cron job para limpieza automática de datos
  * Se ejecuta diariamente a las 2:00 AM UTC
@@ -41,7 +40,7 @@ export async function GET(request: NextRequest) {
 			.lt('expires', thirtyDaysAgo.toISOString())
 		
 		if (sessionError) {
-			logger.error('Error cleaning expired sessions:', sessionError, 'API')
+			console.error('Error cleaning expired sessions:', sessionError)
 		} else {
 			cleanupTasks.push(`Cleaned expired sessions`)
 		}
@@ -56,7 +55,7 @@ export async function GET(request: NextRequest) {
 			.lt('created_at', ninetyDaysAgo.toISOString())
 		
 		if (logsError) {
-			logger.error('Error cleaning old logs:', logsError, 'API')
+			console.error('Error cleaning old logs:', logsError)
 		} else {
 			cleanupTasks.push(`Cleaned old audit logs`)
 		}
@@ -71,12 +70,12 @@ export async function GET(request: NextRequest) {
 			.lt('created_at', sevenDaysAgo.toISOString())
 		
 		if (filesError) {
-			logger.error('Error cleaning temp files:', filesError, 'API')
+			console.error('Error cleaning temp files:', filesError)
 		} else {
 			cleanupTasks.push(`Cleaned temporary files`)
 		}
 		
-		logger.debug('Cleanup completed:', cleanupTasks, 'API')
+		console.log('Cleanup completed:', cleanupTasks)
 		
 		return NextResponse.json({
 			success: true,
@@ -86,7 +85,7 @@ export async function GET(request: NextRequest) {
 		})
 		
 	} catch (error) {
-		logger.error('Cleanup cron job failed:', error, 'API')
+		console.error('Cleanup cron job failed:', error)
 		
 		return NextResponse.json(
 			{

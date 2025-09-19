@@ -40,29 +40,76 @@ class Logger {
 
     // In development, use console for immediate feedback
     if (this.isDevelopment) {
+      // Sanitize inputs to prevent injection attacks
+      // Sanitización completa para prevenir SQL injection y XSS
+      const sanitizeInput = (input: any): string => {
+        if (input === null || input === undefined) return ''
+        
+        // Handle objects by converting to safe JSON
+        if (typeof input === 'object') {
+          try {
+            const safeObj = JSON.parse(JSON.stringify(input, (key, value) => {
+              if (typeof value === 'string') {
+                return value
+                  .replace(/[\x00-\x1f\x7f-\x9f]/g, '') // Control characters
+                  .replace(/['"`;\\]/g, '') // SQL injection characters
+                  .replace(/<[^>]*>/g, '') // HTML tags
+                  .replace(/javascript:/gi, '') // JavaScript protocol
+                  .substring(0, 500) // Limit string length in objects
+              }
+              return value
+            }))
+            return JSON.stringify(safeObj).substring(0, 1000)
+          } catch {
+            return '[Object - sanitization failed]'
+          }
+        }
+        
+        const str = String(input)
+        return str
+          .replace(/[\x00-\x1f\x7f-\x9f]/g, '') // Control characters
+          .replace(/['"`;\\]/g, '') // SQL injection characters
+          .replace(/<[^>]*>/g, '') // HTML tags
+          .replace(/javascript:/gi, '') // JavaScript protocol
+          .substring(0, 1000) // Limit length
+      }
+      
+      const sanitizedMessage = sanitizeInput(message)
+      const sanitizedContext = sanitizeInput(context)
+      const sanitizedData = sanitizeInput(data)
+      
+      // Convert all to safe strings to prevent any object injection
+      const safeMessage = String(sanitizedMessage || '')
+      const safeContext = String(sanitizedContext || '')
+      const safeData = String(sanitizedData || '')
+      
       switch (level) {
         case LogLevel.ERROR:
-          console.error(`[ERROR] ${context ? `[${context}] ` : ''}${message}`, data || '')
+          console.error('[ERROR]', safeContext ? '[' + safeContext + ']' : '', safeMessage, safeData)
           break
         case LogLevel.WARN:
-          console.warn(`[WARN] ${context ? `[${context}] ` : ''}${message}`, data || '')
+          console.warn('[WARN]', safeContext ? '[' + safeContext + ']' : '', safeMessage, safeData)
           break
         case LogLevel.INFO:
-          console.info(`[INFO] ${context ? `[${context}] ` : ''}${message}`, data || '')
+          console.info('[INFO]', safeContext ? '[' + safeContext + ']' : '', safeMessage, safeData)
           break
         case LogLevel.DEBUG:
-          console.log(`[DEBUG] ${context ? `[${context}] ` : ''}${message}`, data || '')
+          console.log('[DEBUG]', safeContext ? '[' + safeContext + ']' : '', safeMessage, safeData)
           break
       }
     } else {
       // In production, only log errors and warnings to console
       // Info and debug should go to proper logging service
+      const sanitizedMessage = String(message).replace(/[\x00-\x1f\x7f-\x9f]/g, '')
+      const sanitizedContext = context ? String(context).replace(/[\x00-\x1f\x7f-\x9f]/g, '') : null
+      const sanitizedData = data ? String(data).replace(/[\x00-\x1f\x7f-\x9f]/g, '') : ''
+      
       if (level <= LogLevel.WARN) {
-        const logMessage = `[${LogLevel[level]}] ${context ? `[${context}] ` : ''}${message}`
+        const logMessage = '[' + LogLevel[level] + '] ' + (sanitizedContext ? '[' + sanitizedContext + '] ' : '') + sanitizedMessage
         if (level === LogLevel.ERROR) {
-          console.error(logMessage, data || '')
+          console.error(logMessage, sanitizedData)
         } else {
-          console.warn(logMessage, data || '')
+          console.warn(logMessage, sanitizedData)
         }
       }
     }
@@ -97,7 +144,7 @@ class Logger {
   }
 
   api(message: string, data?: any, endpoint?: string) {
-    this.error(message, data, endpoint ? `API:${endpoint}` : 'API')
+    this.error(message, data, endpoint ? 'API:' + endpoint : 'API')
   }
 
   db(message: string, data?: any) {

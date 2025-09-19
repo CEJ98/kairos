@@ -28,7 +28,6 @@ import {
 	Camera,
 	Shield
 } from 'lucide-react'
-import { logger } from '@/lib/logger'
 
 interface UserProfile {
 	id: string
@@ -113,7 +112,7 @@ export default function ProfilePage() {
 				hourlyRate: data.trainerProfile?.hourlyRate?.toString() || ''
 			})
 		} catch (error) {
-			logger.error('Error fetching profile:', error)
+			console.error('Error fetching profile:', error)
 			toast.error('Error al cargar el perfil')
 		} finally {
 			setLoading(false)
@@ -123,22 +122,69 @@ export default function ProfilePage() {
 	const handleSave = async () => {
 		setSaving(true)
 		try {
-			const payload: any = {
-				name: formData.name
+			// Validaciones básicas
+			if (!formData.name.trim()) {
+				toast.error('El nombre es obligatorio')
+				setSaving(false)
+				return
 			}
 
-			// Agregar datos específicos según el rol
+			if (formData.name.trim().length < 2) {
+				toast.error('El nombre debe tener al menos 2 caracteres')
+				setSaving(false)
+				return
+			}
+
+			const payload: any = {
+				name: formData.name.trim()
+			}
+
+			// Agregar datos específicos según el rol con validaciones
 			if (profile?.role === 'CLIENT') {
+				// Validaciones para cliente
+				if (formData.age && (parseInt(formData.age) < 13 || parseInt(formData.age) > 120)) {
+					toast.error('La edad debe estar entre 13 y 120 años')
+					setSaving(false)
+					return
+				}
+				if (formData.weight && (parseFloat(formData.weight) < 20 || parseFloat(formData.weight) > 500)) {
+					toast.error('El peso debe estar entre 20 y 500 kg')
+					setSaving(false)
+					return
+				}
+				if (formData.height && (parseFloat(formData.height) < 100 || parseFloat(formData.height) > 250)) {
+					toast.error('La altura debe estar entre 100 y 250 cm')
+					setSaving(false)
+					return
+				}
+
 				payload.age = formData.age ? parseInt(formData.age) : undefined
 				payload.weight = formData.weight ? parseFloat(formData.weight) : undefined
 				payload.height = formData.height ? parseFloat(formData.height) : undefined
-				payload.gender = formData.gender
-				payload.fitnessGoal = formData.fitnessGoal
-				payload.activityLevel = formData.activityLevel
+				payload.gender = formData.gender || undefined
+				payload.fitnessGoal = formData.fitnessGoal || undefined
+				payload.activityLevel = formData.activityLevel || undefined
 			} else if (profile?.role === 'TRAINER') {
-				payload.bio = formData.bio
+				// Validaciones para entrenador
+				if (formData.experience && (parseInt(formData.experience) < 0 || parseInt(formData.experience) > 50)) {
+					toast.error('La experiencia debe estar entre 0 y 50 años')
+					setSaving(false)
+					return
+				}
+				if (formData.hourlyRate && (parseFloat(formData.hourlyRate) < 0 || parseFloat(formData.hourlyRate) > 1000)) {
+					toast.error('La tarifa por hora debe estar entre 0 y 1000')
+					setSaving(false)
+					return
+				}
+				if (formData.bio && formData.bio.length > 500) {
+					toast.error('La biografía no puede exceder 500 caracteres')
+					setSaving(false)
+					return
+				}
+
+				payload.bio = formData.bio || undefined
 				payload.experience = formData.experience ? parseInt(formData.experience) : undefined
-				payload.specialties = formData.specialties
+				payload.specialties = formData.specialties || undefined
 				payload.hourlyRate = formData.hourlyRate ? parseFloat(formData.hourlyRate) : undefined
 			}
 
@@ -156,7 +202,7 @@ export default function ProfilePage() {
 			setEditMode(false)
 			await fetchProfile()
 		} catch (error) {
-			logger.error('Error updating profile:', error)
+			console.error('Error updating profile:', error)
 			toast.error('Error al actualizar el perfil')
 		} finally {
 			setSaving(false)
@@ -186,7 +232,7 @@ export default function ProfilePage() {
 				</div>
 			</div>
 		)
-	}
+}
 
 	if (!profile) {
 		return (
@@ -239,10 +285,11 @@ export default function ProfilePage() {
 							<span className="responsive-body">Editar Perfil</span>
 						</Button>
 					)}
-				</div>
 			</div>
 
-			<div className="grid grid-cols-1 lg:grid-cols-3 mobile-gap">
+				</div>
+
+				<div className="grid grid-cols-1 lg:grid-cols-3 mobile-gap">
 				{/* Información Básica */}
 				<div className="lg:col-span-1">
 					<Card className="mobile-card">

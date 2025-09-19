@@ -1,26 +1,22 @@
 import '@testing-library/jest-dom'
 
-// Mock Next.js router
+// Mock Next.js router (App Router)
+const mockRouter = {
+  push: jest.fn(),
+  replace: jest.fn(),
+  prefetch: jest.fn(),
+  back: jest.fn(),
+  forward: jest.fn(),
+  refresh: jest.fn(),
+  pathname: '/',
+  query: {},
+  asPath: '/',
+}
+
 jest.mock('next/navigation', () => ({
-	useRouter() {
-		return {
-			push: jest.fn(),
-			replace: jest.fn(),
-			prefetch: jest.fn(),
-			back: jest.fn(),
-			forward: jest.fn(),
-			refresh: jest.fn(),
-			pathname: '/',
-			query: {},
-			asPath: '/'
-		}
-	},
-	usePathname() {
-		return '/'
-	},
-	useSearchParams() {
-		return new URLSearchParams()
-	}
+  useRouter: jest.fn(() => mockRouter),
+  usePathname: jest.fn(() => '/'),
+  useSearchParams: jest.fn(() => new URLSearchParams()),
 }))
 
 // Mock NextAuth

@@ -4,11 +4,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { logSecurityEvent } from '@/lib/security-audit'
-import crypto from 'crypto'
-import { logger } from './logger'
 
 interface CSRFToken {
   token: string
@@ -43,8 +41,10 @@ export function generateCSRFToken(userId: string, sessionId: string): string {
     })
   }
   
-  // Generate new token
-  const token = crypto.randomBytes(32).toString('hex')
+  // Generate new token using Web Crypto API
+  const tokenBytes = new Uint8Array(32)
+  crypto.getRandomValues(tokenBytes)
+  const token = Array.from(tokenBytes, byte => byte.toString(16).padStart(2, '0')).join('')
   const now = new Date()
   const expiresAt = new Date(now.getTime() + TOKEN_EXPIRY_MS)
   
@@ -145,7 +145,7 @@ export function withCSRFProtection(
       return validateAndProceed(req, csrfToken, session.user.id, session.user.id)
       
     } catch (error) {
-      logger.error('CSRF protection error', error, 'SECURITY')
+      console.error('CSRF protection error:', error)
       return NextResponse.json(
         { error: 'Internal server error' },
         { status: 500 }
@@ -210,16 +210,15 @@ export function withCSRFProtection(
 /**
  * Get CSRF token for current session (for use in forms)
  */
-export async function getCSRFToken(): Promise<string | null> {
+export async function getCSRFToken(userId?: string, sessionId?: string): Promise<string | null> {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    if (!userId || !sessionId) {
       return null
     }
     
-    return generateCSRFToken(session.user.id, session.user.id)
+    return generateCSRFToken(userId, sessionId)
   } catch (error) {
-    logger.error('Error generating CSRF token', error, 'SECURITY')
+    console.error('Error generating CSRF token:', error)
     return null
   }
 }
@@ -300,7 +299,7 @@ export const useCSRFToken = () => {
           return data.token
         }
       } catch (error) {
-        logger.error('Failed to get CSRF token', error, 'SECURITY')
+        console.error('Failed to get CSRF token:', error)
       }
       return null
     }

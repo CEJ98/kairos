@@ -1,6 +1,7 @@
 /**
  * End-to-End User Journey Tests for Kairos Fitness
  * Tests complete user flows from registration to workout completion
+ * Enhanced with comprehensive test scenarios and edge cases
  */
 
 import { test, expect, Page } from '@playwright/test'
@@ -8,14 +9,23 @@ import { test, expect, Page } from '@playwright/test'
 // Test data
 const testUser = {
   name: 'E2E Test User',
-  email: 'e2e-test@example.com',
+  email: `e2e-test-${Date.now()}@example.com`,
   password: 'TestPassword123!',
+  firstName: 'John',
+  lastName: 'Doe'
 }
 
 const testTrainer = {
   name: 'E2E Test Trainer',
-  email: 'e2e-trainer@example.com',
+  email: `e2e-trainer-${Date.now()}@example.com`,
   password: 'TestPassword123!',
+  firstName: 'Jane',
+  lastName: 'Trainer'
+}
+
+// Test helpers
+async function waitForPageLoad(page: Page, timeout = 10000) {
+  await page.waitForLoadState('networkidle', { timeout })
 }
 
 test.describe('Complete User Journey', () => {

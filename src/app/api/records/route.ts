@@ -3,7 +3,6 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 
-import { logger } from '@/lib/logger'
 // GET /api/records - Obtener récords personales del usuario
 export async function GET(req: NextRequest) {
 	try {
@@ -88,7 +87,7 @@ export async function GET(req: NextRequest) {
 		})
 
 	} catch (error) {
-		logger.error('Error fetching records:', error, 'API')
+		console.error('Error fetching records:', error)
 		return NextResponse.json(
 			{ error: 'Error al obtener récords' },
 			{ status: 500 }
@@ -184,7 +183,7 @@ export async function POST(req: NextRequest) {
 		return NextResponse.json(record, { status: 201 })
 
 	} catch (error) {
-		logger.error('Error creating record:', error, 'API')
+		console.error('Error creating record:', error)
 		return NextResponse.json(
 			{ error: 'Error al crear récord' },
 			{ status: 500 }

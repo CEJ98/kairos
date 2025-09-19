@@ -36,8 +36,10 @@ import { Switch } from './switch'
 import { Separator } from './separator'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
+import SecureCalendarEventForm from '@/components/forms/SecureCalendarEventForm'
+import type { CalendarEventFormData } from '@/lib/validations/calendar'
 
-// Event types
+// Event types - mantener compatibilidad con el calendario existente
 export interface CalendarEvent {
   id: string
   title: string
@@ -61,6 +63,78 @@ export interface CalendarEvent {
   recurringEndDate?: Date
   reminder?: boolean
   reminderTime?: number // minutes before
+}
+
+// Función para convertir CalendarEvent a CalendarEventFormData
+function convertToFormData(event: CalendarEvent): CalendarEventFormData {
+  return {
+    title: event.title,
+    description: event.description || '',
+    type: event.type === 'workout' ? 'WORKOUT' : 
+          event.type === 'rest' ? 'BREAK' : 
+          event.type === 'assessment' ? 'ASSESSMENT' : 
+          event.type === 'appointment' ? 'CONSULTATION' : 'PERSONAL',
+    status: event.status === 'planned' ? 'SCHEDULED' : 
+            event.status === 'completed' ? 'COMPLETED' : 
+            event.status === 'missed' ? 'CANCELLED' : 'POSTPONED',
+    priority: event.priority === 'low' ? 'LOW' : 
+              event.priority === 'medium' ? 'MEDIUM' : 
+              event.priority === 'high' ? 'HIGH' : 'URGENT',
+    startDate: event.date,
+    endDate: event.date, // Por defecto, mismo día
+    allDay: !event.startTime,
+    location: '',
+    participantIds: [],
+    reminder: {
+      enabled: event.reminder || false,
+      minutesBefore: event.reminderTime || 15
+    },
+    recurrence: {
+      type: event.isRecurring ? 
+            (event.recurringPattern === 'daily' ? 'DAILY' : 
+             event.recurringPattern === 'weekly' ? 'WEEKLY' : 
+             event.recurringPattern === 'monthly' ? 'MONTHLY' : 'NONE') : 'NONE',
+      interval: 1,
+      endDate: event.recurringEndDate
+    },
+    metadata: {
+      workoutId: event.workoutId,
+      trainerId: event.trainerId,
+      clientId: event.clientId
+    }
+  }
+}
+
+// Función para convertir CalendarEventFormData a CalendarEvent
+function convertFromFormData(formData: CalendarEventFormData, id?: string): CalendarEvent {
+  return {
+    id: id ?? Date.now().toString(),
+    title: formData.title || 'Sin título',
+    description: formData.description,
+    type: formData.type === 'WORKOUT' ? 'workout' : 
+          formData.type === 'BREAK' ? 'rest' : 
+          formData.type === 'ASSESSMENT' ? 'assessment' : 
+          formData.type === 'CONSULTATION' ? 'appointment' : 'meal_prep',
+    status: formData.status === 'SCHEDULED' ? 'planned' : 
+            formData.status === 'COMPLETED' ? 'completed' : 
+            formData.status === 'CANCELLED' ? 'missed' : 'rescheduled',
+    priority: formData.priority === 'LOW' ? 'low' : 
+              formData.priority === 'MEDIUM' ? 'medium' : 
+              formData.priority === 'HIGH' ? 'high' : 'high',
+    date: formData.startDate,
+    startTime: formData.allDay ? undefined : format(formData.startDate, 'HH:mm'),
+    endTime: formData.allDay ? undefined : format(formData.endDate, 'HH:mm'),
+    reminder: formData.reminder?.enabled || false,
+    reminderTime: formData.reminder?.minutesBefore || 15,
+    isRecurring: formData.recurrence?.type !== 'NONE',
+    recurringPattern: formData.recurrence?.type === 'DAILY' ? 'daily' : 
+                     formData.recurrence?.type === 'WEEKLY' ? 'weekly' : 
+                     formData.recurrence?.type === 'MONTHLY' ? 'monthly' : undefined,
+    recurringEndDate: formData.recurrence?.endDate,
+    workoutId: formData.metadata?.workoutId,
+    trainerId: formData.metadata?.trainerId,
+    clientId: formData.metadata?.clientId
+  }
 }
 
 // Mock events data
@@ -598,11 +672,18 @@ function EventDetailsForm({
   onDelete: () => void
   onCancel: () => void
 }) {
-  const [formData, setFormData] = useState<Partial<CalendarEvent>>(event)
+  const [isLoading, setIsLoading] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    onSave(formData)
+  const handleSubmit = async (data: CalendarEventFormData) => {
+    setIsLoading(true)
+    try {
+      const calendarEvent = convertFromFormData(data, event?.id)
+      onSave(calendarEvent)
+    } catch (error) {
+      console.error('Error saving calendar event:', error)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   if (!isEditing) {
@@ -668,101 +749,15 @@ function EventDetailsForm({
     )
   }
 
+  const initialData = event ? convertToFormData(event) : undefined
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <Label htmlFor="title">Título</Label>
-        <Input
-          id="title"
-          value={formData.title || ''}
-          onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-          placeholder="Nombre del evento"
-          required
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="type">Tipo</Label>
-          <Select
-            value={formData.type}
-            onValueChange={(value: any) => setFormData(prev => ({ ...prev, type: value }))}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.entries(eventTypeConfig).map(([key, config]) => (
-                <SelectItem key={key} value={key}>
-                  <span className="flex items-center gap-2">
-                    {config.icon} {config.label}
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div>
-          <Label htmlFor="status">Estado</Label>
-          <Select
-            value={formData.status}
-            onValueChange={(value: any) => setFormData(prev => ({ ...prev, status: value }))}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="planned">Planificado</SelectItem>
-              <SelectItem value="completed">Completado</SelectItem>
-              <SelectItem value="missed">Perdido</SelectItem>
-              <SelectItem value="rescheduled">Reprogramado</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="startTime">Hora inicio</Label>
-          <Input
-            id="startTime"
-            type="time"
-            value={formData.startTime || ''}
-            onChange={(e) => setFormData(prev => ({ ...prev, startTime: e.target.value }))}
-          />
-        </div>
-        <div>
-          <Label htmlFor="endTime">Hora fin</Label>
-          <Input
-            id="endTime"
-            type="time"
-            value={formData.endTime || ''}
-            onChange={(e) => setFormData(prev => ({ ...prev, endTime: e.target.value }))}
-          />
-        </div>
-      </div>
-
-      <div>
-        <Label htmlFor="description">Descripción</Label>
-        <Textarea
-          id="description"
-          value={formData.description || ''}
-          onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-          placeholder="Detalles adicionales..."
-          rows={3}
-        />
-      </div>
-
-      <div className="flex justify-between pt-4">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Cancelar
-        </Button>
-        <Button type="submit">
-          Guardar
-        </Button>
-      </div>
-    </form>
+    <SecureCalendarEventForm
+      initialData={initialData}
+      onSubmit={handleSubmit}
+      onCancel={onCancel}
+      isLoading={isLoading}
+    />
   )
 }
 

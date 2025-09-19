@@ -4,9 +4,9 @@ Aplicación completa de gestión de rutinas de ejercicio con potencial de moneti
 
 ## 🚀 Stack Tecnológico
 
-- **Frontend**: Next.js 14 (App Router) + TypeScript + Tailwind CSS
+- **Frontend**: Next.js 15 (App Router) + TypeScript + Tailwind CSS
 - **Backend**: Next.js API Routes + Prisma ORM
-- **Base de datos**: PostgreSQL (Supabase)
+- **Base de datos**: SQLite (desarrollo) / PostgreSQL (producción – Supabase)
 - **Autenticación**: NextAuth.js
 - **Pagos**: Stripe + webhooks
 - **UI Components**: Shadcn/ui + Radix
@@ -88,6 +88,10 @@ npm run db:migrate
 npm run db:seed
 ```
 
+Notas:
+- Desarrollo usa SQLite por defecto (archivo en `DATABASE_URL`).
+- Para producción con PostgreSQL (Supabase), ajusta `DATABASE_URL` a tu instancia Postgres y ejecuta tus migraciones en ese entorno. Si necesitas una definición específica para Postgres, podemos añadir un `schema.postgres.prisma` y scripts dedicados.
+
 ### 5. Configurar Stripe Webhooks
 
 #### Desarrollo local:
@@ -98,7 +102,17 @@ stripe listen --forward-to localhost:3000/api/stripe/webhooks
 # Copiar el webhook secret a .env.local
 ```
 
-#### Producción:
+#### Producción (Automático):
+```bash
+# Configurar variables de entorno en .env.production
+STRIPE_SECRET_KEY="sk_live_..."
+NEXTAUTH_URL="https://tu-dominio.com"
+
+# Ejecutar script de configuración automática
+node setup-production-webhooks.js
+```
+
+#### Producción (Manual):
 1. Ir a Dashboard de Stripe > Webhooks
 2. Crear endpoint: `https://tu-dominio.com/api/stripe/webhooks`
 3. Eventos a escuchar:
@@ -107,6 +121,18 @@ stripe listen --forward-to localhost:3000/api/stripe/webhooks
    - `customer.subscription.deleted`
    - `invoice.payment_succeeded`
    - `invoice.payment_failed`
+   - `checkout.session.completed`
+   - `customer.subscription.trial_will_end`
+4. Copiar el webhook secret a las variables de entorno
+
+#### Panel de Administración:
+Accede a `/admin` como administrador para:
+- ✅ Configurar webhooks automáticamente
+- ✅ Verificar estado de webhooks
+- ✅ Probar conectividad
+- ✅ Ver eventos recientes
+
+Para más detalles, consulta: `docs/STRIPE_WEBHOOKS_PRODUCTION.md`
 
 ### 6. Ejecutar en desarrollo
 ```bash
@@ -163,6 +189,8 @@ npm run type-check      # TypeScript check
 
 # Stripe
 npm run stripe:listen   # Escuchar webhooks localmente
+node setup-production-webhooks.js  # Configurar webhooks en producción
+node scripts/verify-stripe-webhooks.js  # Verificar estado de webhooks
 ```
 
 ## 💰 Planes de Precios

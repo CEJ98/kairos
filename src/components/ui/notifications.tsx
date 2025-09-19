@@ -21,6 +21,7 @@ import {
 } from 'lucide-react'
 import { logger } from '@/lib/logger'
 import { toast } from 'react-hot-toast'
+import { useNotifications } from '@/hooks/useNotifications'
 
 interface Notification {
   id: string
@@ -250,28 +251,7 @@ export function NotificationsDropdown({ isOpen, onClose }: NotificationsProps) {
 
 export function NotificationsBell() {
   const [isOpen, setIsOpen] = useState(false)
-  const [unreadCount, setUnreadCount] = useState(0)
-
-  useEffect(() => {
-    fetchUnreadCount()
-    
-    // Polling cada 30 segundos para actualizar notificaciones
-    const interval = setInterval(fetchUnreadCount, 30000)
-    
-    return () => clearInterval(interval)
-  }, [])
-
-  const fetchUnreadCount = async () => {
-    try {
-      const response = await fetch('/api/notifications?unreadOnly=true&limit=1')
-      if (response.ok) {
-        const data = await response.json()
-        setUnreadCount(data.pagination.total)
-      }
-    } catch (error) {
-      logger.error('Error fetching unread count:', error)
-    }
-  }
+  const { unreadCount, isConnected, error, reconnect } = useNotifications()
 
   return (
     <div className="relative">
@@ -280,6 +260,7 @@ export function NotificationsBell() {
         size="sm"
         className="relative"
         onClick={() => setIsOpen(!isOpen)}
+        title={error ? `Error: ${error}` : isConnected ? 'Conectado' : 'Desconectado'}
       >
         <Bell className="h-5 w-5" />
         {unreadCount > 0 && (
@@ -290,12 +271,31 @@ export function NotificationsBell() {
             {unreadCount > 99 ? '99+' : unreadCount}
           </Badge>
         )}
+        {/* Indicador de conexión */}
+        <div 
+          className={`absolute -bottom-1 -right-1 h-2 w-2 rounded-full border border-white ${
+            error ? 'bg-red-500' : isConnected ? 'bg-green-500' : 'bg-yellow-500'
+          }`}
+          title={error ? 'Error de conexión' : isConnected ? 'Conectado' : 'Conectando...'}
+        />
       </Button>
 
       <NotificationsDropdown 
         isOpen={isOpen} 
         onClose={() => setIsOpen(false)} 
       />
+      
+      {/* Botón de reconexión si hay error */}
+      {error && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="absolute top-full right-0 mt-1 text-xs"
+          onClick={reconnect}
+        >
+          Reconectar
+        </Button>
+      )}
     </div>
   )
 }

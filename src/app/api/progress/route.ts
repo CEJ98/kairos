@@ -3,7 +3,6 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 
-import { logger } from '@/lib/logger'
 // GET /api/progress - Obtener progreso del usuario
 export async function GET(req: NextRequest) {
 	try {
@@ -156,7 +155,7 @@ export async function GET(req: NextRequest) {
 		return NextResponse.json(progressData)
 
 	} catch (error) {
-		logger.error('Error fetching progress:', error, 'API')
+		console.error('Error fetching progress:', error)
 		return NextResponse.json(
 			{ error: 'Error al obtener progreso' },
 			{ status: 500 }
@@ -239,7 +238,7 @@ export async function POST(req: NextRequest) {
 		}
 
 	} catch (error) {
-		logger.error('Error creating progress entry:', error, 'API')
+		console.error('Error creating progress entry:', error)
 		return NextResponse.json(
 			{ error: 'Error al crear entrada de progreso' },
 			{ status: 500 }

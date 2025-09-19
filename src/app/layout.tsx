@@ -64,7 +64,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="es" suppressHydrationWarning className={`${inter.variable} ${jetbrainsMono.variable} light`}>
+    <html lang="es" suppressHydrationWarning className={`${inter.variable} ${jetbrainsMono.variable}`}>
       <head>
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -89,8 +89,12 @@ export default function RootLayout({
         />
       </head>
       <body className={`${inter.className} font-sans antialiased`}>
+        {/* Skip to content for accessibility */}
+        <a href="#main-content" className="skip-link">Saltar al contenido</a>
         <Providers>
-          {children}
+          <main id="main-content">
+            {children}
+          </main>
         </Providers>
         
         {/* Performance and Analytics Scripts */}
@@ -99,10 +103,24 @@ export default function RootLayout({
           strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `
-              // Preload critical resources
+              // Initialize performance monitoring
               if (typeof window !== 'undefined') {
-                // Resource hints
-                const criticalResources = ['/images/hero-bg.jpg'];
+                // Initialize Web Vitals monitoring
+                import('/src/lib/performance-enhancements').then(module => {
+                  if (module.WebVitalsMonitor) {
+                    module.WebVitalsMonitor.initWebVitals();
+                  }
+                }).catch(err => console.warn('Performance monitoring not available:', err));
+                
+                // Initialize performance monitor
+                import('/src/lib/performance-monitor').then(module => {
+                  if (module.initializePerformanceMonitoring) {
+                    module.initializePerformanceMonitoring();
+                  }
+                }).catch(err => console.warn('Performance monitor not available:', err));
+                
+                // Resource hints - only preload existing resources
+                const criticalResources = [];
                 criticalResources.forEach(resource => {
                   const link = document.createElement('link');
                   link.rel = 'preload';
@@ -111,10 +129,10 @@ export default function RootLayout({
                   document.head.appendChild(link);
                 });
                 
-                // Service Worker registration
-                if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
-                  navigator.serviceWorker.register('/sw.js').catch(logger.error);
-                }
+                // Service Worker registration - Temporarily disabled for debugging
+                // if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
+                //   navigator.serviceWorker.register('/sw.js').catch(console.error);
+                // }
               }
             `
           }}

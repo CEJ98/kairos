@@ -49,8 +49,9 @@ const DefaultErrorFallback = ({ error, retry }: { error: Error; retry: () => voi
 	</div>
 )
 
+// Función simplificada para lazy loading sin imports dinámicos variables
 export function withLazyLoading<T = any>(
-	importFn: () => Promise<{ default: ComponentType<T> }>,
+	Component: ComponentType<T>,
 	options: LazyWrapperProps = {}
 ) {
 	const {
@@ -58,8 +59,6 @@ export function withLazyLoading<T = any>(
 		loadingSize = 'md',
 		errorFallback: ErrorFallback = DefaultErrorFallback
 	} = options
-
-	const LazyComponent = lazy(importFn)
 
 	return function LazyWrapper(props: T) {
 		return (
@@ -71,7 +70,7 @@ export function withLazyLoading<T = any>(
 					/>
 				}
 			>
-				<LazyComponent {...(props as any)} />
+				<Component {...(props as any)} />
 			</Suspense>
 		)
 	}
@@ -83,23 +82,10 @@ export function withLazyLoading<T = any>(
 //   { loadingMessage: 'Cargando constructor de rutinas...', loadingSize: 'lg' }
 // )
 
-// Función helper para crear componentes lazy dinámicamente
-export function createLazyComponent(importPath: string, options?: LazyWrapperProps) {
-	return withLazyLoading(
-		() => import(/* @vite-ignore */ importPath),
-		options
-	)
-}
+// Función helper removida para evitar warnings de dependencia crítica
+// Para crear componentes lazy, usar directamente withLazyLoading con imports estáticos
 
-// Hook para precargar componentes
-export function usePreloadComponent(importFn: () => Promise<any>) {
-	const preload = () => {
-		if (typeof window !== 'undefined') {
-			importFn()
-		}
-	}
-
-	return preload
-}
+// Hook para precargar componentes removido para evitar warnings de dependencia crítica
+// Para precargar componentes, usar directamente el import en el useEffect del componente
 
 export { LoadingSpinner }

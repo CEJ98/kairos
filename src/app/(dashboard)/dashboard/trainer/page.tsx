@@ -1,178 +1,97 @@
 'use client'
 
-import { useState, Suspense } from 'react'
+import React, { useState, Suspense, lazy } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Progress } from '@/components/ui/progress'
-import { LoadingSpinner, withLazyLoading } from '@/components/ui/lazy-loader'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useTrainerMetrics, formatters } from '@/hooks/use-trainer-metrics'
+import { useTrainerAnalytics } from '@/hooks/use-trainer-analytics'
+
+// Lazy load components for better performance
+// Removed lazy import for trainer-analytics as we're using the hook directly
+const ClientsList = lazy(() => import('@/components/trainer/clients-list'))
+const RevenueChart = lazy(() => import('@/components/trainer/revenue-chart'))
 import { 
-  Users,
-  DollarSign,
+  Users, 
+  DollarSign, 
+  Star, 
+  Activity, 
+  Calendar, 
+  Plus, 
+  UserPlus, 
+  ClipboardList, 
+  CreditCard,
   TrendingUp,
-  Calendar,
-  Plus,
-  MessageSquare,
-  Target,
   Clock,
-  Star,
+  Target,
+  Award,
+  RefreshCw,
+  Loader2,
+  MessageSquare,
   MoreVertical,
   Send,
   Eye,
-  UserPlus,
-  Trophy,
-  Activity
+  Trophy
 } from 'lucide-react'
 import Link from 'next/link'
 
-// Lazy load heavy trainer components
-const LazyTrainerAnalytics = withLazyLoading(
-	() => import('@/components/analytics/advanced-analytics'),
-	{ loadingMessage: 'Cargando analytics avanzados...', loadingSize: 'md' }
-)
-
-const LazyClientsList = withLazyLoading(
-	() => import('@/components/trainer/clients-list'),
-	{ loadingMessage: 'Cargando lista de clientes...', loadingSize: 'sm' }
-)
-
-const LazyRevenueChart = withLazyLoading(
-	() => import('@/components/trainer/revenue-chart'),
-	{ loadingMessage: 'Cargando gráfico de ingresos...', loadingSize: 'sm' }
-)
-
 export default function TrainerDashboardPage() {
   const [selectedTimeframe, setSelectedTimeframe] = useState('week')
+  const { data, loading, error, refresh } = useTrainerMetrics(10)
 
-  // Mock data - en producción vendría de APIs
-  const stats = {
-    totalClients: 42,
-    activeClients: 38,
-    newClientsThisMonth: 8,
-    monthlyRevenue: 2450.00,
-    avgSessionRating: 4.8,
-    completedWorkouts: 156,
-    upcomingAppointments: 12
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="flex items-center space-x-2">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span>Cargando métricas del trainer...</span>
+        </div>
+      </div>
+    )
   }
 
-  const recentClients = [
-    {
-      id: '1',
-      name: 'María García',
-      email: 'maria@email.com',
-      avatar: 'MG',
-      joinDate: '2024-01-15',
-      subscription: 'Pro',
-      lastWorkout: '2024-01-20',
-      streak: 5,
-      progress: 85,
-      nextSession: 'Hoy, 6:00 PM'
-    },
-    {
-      id: '2', 
-      name: 'Carlos López',
-      email: 'carlos@email.com',
-      avatar: 'CL',
-      joinDate: '2024-01-10',
-      subscription: 'Basic',
-      lastWorkout: '2024-01-19',
-      streak: 3,
-      progress: 72,
-      nextSession: 'Mañana, 8:00 AM'
-    },
-    {
-      id: '3',
-      name: 'Ana Rodríguez',
-      email: 'ana@email.com',
-      avatar: 'AR',
-      joinDate: '2024-01-08',
-      subscription: 'Pro',
-      lastWorkout: '2024-01-20',
-      streak: 12,
-      progress: 95,
-      nextSession: 'Miércoles, 5:00 PM'
-    }
-  ]
-
-  const recentActivity = [
-    {
-      id: '1',
-      type: 'workout_completed',
-      client: 'María García',
-      action: 'completó Full Body Strength',
-      time: 'hace 2 horas',
-      rating: 5
-    },
-    {
-      id: '2',
-      type: 'new_client',
-      client: 'Pedro Martínez',
-      action: 'se unió como cliente',
-      time: 'hace 4 horas',
-      subscription: 'Pro'
-    },
-    {
-      id: '3',
-      type: 'message',
-      client: 'Carlos López',
-      action: 'envió un mensaje',
-      time: 'hace 6 horas',
-      preview: '¿Podemos cambiar la sesión de mañana?'
-    },
-    {
-      id: '4',
-      type: 'milestone',
-      client: 'Ana Rodríguez',
-      action: 'alcanzó 10 días de racha',
-      time: 'hace 1 día'
-    }
-  ]
-
-  const upcomingSessions = [
-    {
-      id: '1',
-      client: 'María García',
-      type: 'Personal Training',
-      time: 'Hoy, 6:00 PM',
-      duration: 60,
-      location: 'Gimnasio Central'
-    },
-    {
-      id: '2',
-      client: 'Carlos López',
-      type: 'Assessment',
-      time: 'Mañana, 8:00 AM',
-      duration: 45,
-      location: 'Online'
-    },
-    {
-      id: '3',
-      client: 'Ana Rodríguez',
-      type: 'Follow-up',
-      time: 'Miércoles, 5:00 PM',
-      duration: 30,
-      location: 'Gimnasio Central'
-    }
-  ]
-
-  const getActivityIcon = (type: string) => {
-    switch (type) {
-      case 'workout_completed': return <Trophy className="h-4 w-4 text-green-600" />
-      case 'new_client': return <UserPlus className="h-4 w-4 text-blue-600" />
-      case 'message': return <MessageSquare className="h-4 w-4 text-purple-600" />
-      case 'milestone': return <Target className="h-4 w-4 text-orange-600" />
-      default: return <Activity className="h-4 w-4 text-gray-600" />
-    }
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="text-red-600">Error</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <Button onClick={refresh} className="w-full">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Reintentar
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
+
+  const { metrics, clients, recentActivity } = data
+
+  // Datos reales obtenidos del hook useTrainerMetrics
+
+
+
+  // Las próximas sesiones se obtienen de metrics?.upcomingAppointments
 
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard del Entrenador</h1>
-        <p className="text-gray-600 mt-2">
-          Gestiona tus clientes y haz crecer tu negocio fitness
-        </p>
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Panel del Trainer</h1>
+          <p className="text-muted-foreground">Gestiona tus clientes y monitorea su progreso</p>
+        </div>
+        <Button onClick={refresh} variant="outline" size="sm">
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Actualizar
+        </Button>
       </div>
 
       {/* Quick Stats */}
@@ -182,8 +101,8 @@ export default function TrainerDashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Clientes Totales</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.totalClients}</p>
-                <p className="text-sm text-green-600">+{stats.newClientsThisMonth} este mes</p>
+                <p className="text-3xl font-bold text-gray-900">{metrics?.totalClients || 0}</p>
+                <p className="text-sm text-green-600">+{metrics?.newClientsThisMonth || 0} este mes</p>
               </div>
               <div className="p-3 bg-blue-100 rounded-full">
                 <Users className="h-6 w-6 text-blue-600" />
@@ -197,8 +116,8 @@ export default function TrainerDashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Ingresos del Mes</p>
-                <p className="text-3xl font-bold text-gray-900">${stats.monthlyRevenue.toLocaleString()}</p>
-                <p className="text-sm text-green-600">+12% vs mes anterior</p>
+                <p className="text-3xl font-bold text-gray-900">{formatters.currency(metrics?.monthlyRevenue || 0)}</p>
+                <p className="text-sm text-green-600">{metrics?.activeClients || 0} clientes activos</p>
               </div>
               <div className="p-3 bg-green-100 rounded-full">
                 <DollarSign className="h-6 w-6 text-green-600" />
@@ -212,12 +131,8 @@ export default function TrainerDashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Rating Promedio</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.avgSessionRating}</p>
-                <div className="flex items-center gap-1">
-                  {[1,2,3,4,5].map((star) => (
-                    <Star key={star} className="h-3 w-3 text-yellow-400 fill-current" />
-                  ))}
-                </div>
+                <p className="text-3xl font-bold text-gray-900">{formatters.rating(metrics?.avgSessionRating || 0)}</p>
+                <p className="text-sm text-yellow-600">Adherencia: {formatters.percentage(metrics?.adherenceRate || 0)}</p>
               </div>
               <div className="p-3 bg-yellow-100 rounded-full">
                 <Star className="h-6 w-6 text-yellow-600" />
@@ -230,9 +145,9 @@ export default function TrainerDashboardPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Entrenamientos</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.completedWorkouts}</p>
-                <p className="text-sm text-purple-600">este mes</p>
+                <p className="text-sm text-gray-600">Entrenamientos Completados</p>
+                <p className="text-3xl font-bold text-gray-900">{metrics?.completedWorkouts || 0}</p>
+                <p className="text-sm text-purple-600">{metrics?.upcomingAppointments || 0} próximas citas</p>
               </div>
               <div className="p-3 bg-purple-100 rounded-full">
                 <TrendingUp className="h-6 w-6 text-purple-600" />
@@ -291,6 +206,7 @@ export default function TrainerDashboardPage() {
               <CardTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5 text-blue-600" />
                 Clientes Activos
+                <Badge variant="secondary">{clients?.length || 0}</Badge>
               </CardTitle>
               <Link href="/dashboard/trainer/clients">
                 <Button variant="ghost" size="sm">
@@ -300,15 +216,20 @@ export default function TrainerDashboardPage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {recentClients.map((client) => (
+            {clients?.length ? clients.map((client) => (
               <div key={client.id} className="flex items-center justify-between p-4 border rounded-lg">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                    {client.avatar}
-                  </div>
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src={client.avatar} alt={client.name} />
+                    <AvatarFallback className="bg-blue-600 text-white">
+                      {client.name.split(' ').map(n => n[0]).join('')}
+                    </AvatarFallback>
+                  </Avatar>
                   <div>
                     <h4 className="font-medium text-gray-900">{client.name}</h4>
-                    <p className="text-sm text-gray-600">{client.nextSession}</p>
+                    <p className="text-sm text-gray-600">
+                      {client.lastWorkout ? formatters.timeAgo(client.lastWorkout) : 'Sin entrenamientos'}
+                    </p>
                     <div className="flex items-center gap-2 mt-1">
                       <Badge variant={client.subscription === 'Pro' ? 'default' : 'secondary'} className="text-xs">
                         {client.subscription}
@@ -321,15 +242,24 @@ export default function TrainerDashboardPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="text-right">
-                    <div className="text-sm font-medium">{client.progress}%</div>
-                    <Progress value={client.progress} className="w-16 h-2" />
+                    <div className="text-sm font-medium">{formatters.percentage(client.adherenceRate)}</div>
+                        <Progress value={client.adherenceRate} className="w-16 h-2" />
                   </div>
                   <Button variant="ghost" size="sm">
                     <MoreVertical className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
-            ))}
+            )) : (
+              <div className="text-center py-8 text-gray-500">
+                <Users className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                <p>No hay clientes activos</p>
+                <Button className="mt-4" size="sm">
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Agregar Cliente
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -340,6 +270,7 @@ export default function TrainerDashboardPage() {
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="h-5 w-5 text-green-600" />
                 Próximas Sesiones
+                <Badge variant="secondary">{metrics?.upcomingAppointments || 0}</Badge>
               </CardTitle>
               <Link href="/dashboard/trainer/calendar">
                 <Button variant="ghost" size="sm">
@@ -349,34 +280,35 @@ export default function TrainerDashboardPage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {upcomingSessions.map((session) => (
-              <div key={session.id} className="flex items-center justify-between p-4 bg-green-50 border border-green-200 rounded-lg">
+            {metrics?.upcomingAppointments ? (
+              <div className="flex items-center justify-between p-4 bg-green-50 border border-green-200 rounded-lg">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-medium text-gray-900">{session.client}</h4>
-                    <Badge variant="outline" className="text-xs">
-                      {session.type}
-                    </Badge>
+                    <h4 className="font-medium text-gray-900">Sesiones programadas</h4>
                   </div>
-                  <p className="text-sm text-gray-600">{session.time}</p>
-                  <div className="flex items-center gap-4 mt-1 text-xs text-gray-500">
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      {session.duration} min
-                    </span>
-                    <span>{session.location}</span>
-                  </div>
+                  <p className="text-sm text-gray-600">{metrics.upcomingAppointments} citas pendientes</p>
                 </div>
                 <div className="flex gap-2">
-                  <Button size="sm" variant="outline">
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                  <Button size="sm" variant="outline">
-                    <MessageSquare className="h-4 w-4" />
-                  </Button>
+                  <Link href="/dashboard/trainer/calendar">
+                    <Button size="sm" variant="outline">
+                      <Calendar className="h-4 w-4 mr-2" />
+                      Ver Calendario
+                    </Button>
+                  </Link>
                 </div>
               </div>
-            ))}
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <Calendar className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                <p>No hay sesiones programadas</p>
+                <Link href="/dashboard/trainer/calendar">
+                  <Button className="mt-4" size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Programar Sesión
+                  </Button>
+                </Link>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -391,32 +323,43 @@ export default function TrainerDashboardPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {recentActivity.map((activity) => (
+            {recentActivity?.length ? recentActivity.map((activity) => (
               <div key={activity.id} className="flex items-center gap-4 p-4 border rounded-lg">
                 <div className="flex-shrink-0">
-                  {getActivityIcon(activity.type)}
-                </div>
+                   <div className={`p-2 rounded-full ${
+                     activity.type === 'workout_completed' ? 'bg-green-100' :
+                     activity.type === 'new_client' ? 'bg-purple-100' :
+                     activity.type === 'message' ? 'bg-blue-100' :
+                     'bg-gray-100'
+                   }`}>
+                     {activity.type === 'workout_completed' && <Activity className="h-4 w-4 text-green-600" />}
+                     {activity.type === 'new_client' && <UserPlus className="h-4 w-4 text-purple-600" />}
+                     {activity.type === 'message' && <MessageSquare className="h-4 w-4 text-blue-600" />}
+                     {activity.type === 'milestone' && <Trophy className="h-4 w-4 text-yellow-600" />}
+                     {activity.type === 'missed_session' && <Clock className="h-4 w-4 text-red-600" />}
+                   </div>
+                 </div>
                 <div className="flex-1">
                   <p className="text-sm">
-                    <span className="font-medium">{activity.client}</span>{' '}
-                    <span className="text-gray-600">{activity.action}</span>
+                    <span className="font-medium">{activity.clientName}</span>{' '}
+                    <span className="text-gray-600">{activity.description}</span>
                   </p>
-                  {activity.preview && (
-                    <p className="text-sm text-gray-500 mt-1">&quot;{activity.preview}&quot;</p>
+                  {activity.metadata?.workoutName && (
+                    <p className="text-sm text-gray-500 mt-1">&quot;{activity.metadata.workoutName}&quot;</p>
                   )}
-                  <p className="text-xs text-gray-500 mt-1">{activity.time}</p>
+                  <p className="text-xs text-gray-500 mt-1">{activity.timestamp ? formatters.timeAgo(activity.timestamp) : activity.time}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  {activity.rating && (
+                  {activity.metadata?.rating && (
                     <div className="flex items-center gap-1">
-                      {[...Array(activity.rating)].map((_, i) => (
+                      {[...Array(activity.metadata.rating)].map((_, i) => (
                         <Star key={i} className="h-3 w-3 text-yellow-400 fill-current" />
                       ))}
                     </div>
                   )}
-                  {activity.subscription && (
+                  {activity.metadata?.subscription && (
                     <Badge variant="outline" className="text-xs">
-                      {activity.subscription}
+                      {activity.metadata.subscription}
                     </Badge>
                   )}
                   {activity.type === 'message' && (
@@ -426,7 +369,12 @@ export default function TrainerDashboardPage() {
                   )}
                 </div>
               </div>
-            ))}
+            )) : (
+              <div className="text-center py-8 text-gray-500">
+                <Activity className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                <p>No hay actividad reciente</p>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

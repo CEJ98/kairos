@@ -100,98 +100,24 @@ export default function TermsPage() {
 
 					<Card>
 						<CardHeader>
-							<CardTitle className="flex items-center gap-2">
-								<FileText className="h-5 w-5" />
-								5. Suscripciones y Pagos
-							</CardTitle>
-						</CardHeader>
-						<CardContent className="space-y-4">
-							<div>
-								<h4 className="font-semibold mb-2">5.1 Planes de Suscripción</h4>
-								<p className="text-gray-700">
-									Ofrecemos diferentes planes de suscripción con funcionalidades específicas. Los precios y características están disponibles en nuestra página de precios.
-								</p>
-							</div>
-							<div>
-								<h4 className="font-semibold mb-2">5.2 Facturación y Renovación</h4>
-								<p className="text-gray-700">
-									Las suscripciones se renuevan automáticamente. Puede cancelar en cualquier momento desde su panel de configuración.
-								</p>
-							</div>
-							<div>
-								<h4 className="font-semibold mb-2">5.3 Política de Reembolsos</h4>
-								<p className="text-gray-700">
-									Ofrecemos reembolsos completos dentro de los primeros 30 días. Los reembolsos se procesan en 5-10 días hábiles.
-								</p>
-							</div>
-						</CardContent>
-					</Card>
-
-					<Card>
-						<CardHeader>
-							<CardTitle>6. Propiedad Intelectual</CardTitle>
-						</CardHeader>
-						<CardContent>
-							<p className="text-gray-700 mb-4">
-								Todos los contenidos, marcas registradas, logos y propiedad intelectual relacionada con Kairos Fitness son propiedad de la empresa o sus licenciantes.
-							</p>
-							<p className="text-gray-700">
-								No tiene derecho a usar, copiar, modificar o distribuir nuestro contenido sin autorización expresa por escrito.
-							</p>
-						</CardContent>
-					</Card>
-
-					<Card>
-						<CardHeader>
-							<CardTitle>7. Terminación del Servicio</CardTitle>
-						</CardHeader>
-						<CardContent className="space-y-4">
-							<p className="text-gray-700">
-								Nos reservamos el derecho de terminar o suspender su cuenta si:
-							</p>
-							<ul className="list-disc list-inside text-gray-700 space-y-1 ml-4">
-								<li>Viola estos términos de servicio</li>
-								<li>Usa el servicio para actividades ilegales</li>
-								<li>Compromete la seguridad de otros usuarios</li>
-								<li>No paga las tarifas correspondientes</li>
-							</ul>
-						</CardContent>
-					</Card>
-
-					<Card>
-						<CardHeader>
-							<CardTitle>8. Modificaciones</CardTitle>
+							<CardTitle>5. Modificaciones</CardTitle>
 						</CardHeader>
 						<CardContent>
 							<p className="text-gray-700">
 								Nos reservamos el derecho de modificar estos términos en cualquier momento. 
-								Las modificaciones importantes se notificarán por email con 30 días de anticipación.
-								El uso continuado del servicio después de las modificaciones constituye aceptación de los nuevos términos.
+								Las modificaciones entrarán en vigor inmediatamente después de su publicación en la plataforma.
 							</p>
 						</CardContent>
 					</Card>
 
 					<Card>
 						<CardHeader>
-							<CardTitle>9. Ley Aplicable y Jurisdicción</CardTitle>
-						</CardHeader>
-						<CardContent>
-							<p className="text-gray-700">
-								Estos términos se rigen por las leyes del estado de California, Estados Unidos. 
-								Cualquier disputa se resolverá en los tribunales de San Francisco, California.
-							</p>
-						</CardContent>
-					</Card>
-
-					<Card>
-						<CardHeader>
-							<CardTitle>10. Contacto</CardTitle>
+							<CardTitle>6. Contacto</CardTitle>
 						</CardHeader>
 						<CardContent>
 							<p className="text-gray-700">
 								Si tiene preguntas sobre estos términos, puede contactarnos a través de nuestra 
-								<Link href="/contact" className="text-green-600 hover:underline">página de contacto</Link>
-								o enviando un correo a legal@kairosfit.com.
+								<Link href="/contact" className="text-green-600 hover:underline">página de contacto</Link>.
 							</p>
 						</CardContent>
 					</Card>

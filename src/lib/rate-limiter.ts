@@ -20,8 +20,43 @@ interface RateLimitStore {
   }
 }
 
-// In-memory store for rate limiting (use Redis in production)
+// In-memory store for rate limiting (fallback when Redis no disponible)
 const rateLimitStore: RateLimitStore = {}
+
+// Optional Redis (Upstash REST) client setup
+const UPSTASH_URL = process.env.UPSTASH_REDIS_REST_URL
+const UPSTASH_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN
+
+async function upstashPipeline(commands: any[]) {
+  if (!UPSTASH_URL || !UPSTASH_TOKEN) return null
+  try {
+    const res = await fetch(`${UPSTASH_URL}/pipeline`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${UPSTASH_TOKEN}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(commands)
+    })
+    if (!res.ok) return null
+    return await res.json()
+  } catch {
+    return null
+  }
+}
+
+async function redisIncrementAndGetTTL(key: string, windowMs: number): Promise<{ count: number; ttlMs: number } | null> {
+  if (!UPSTASH_URL || !UPSTASH_TOKEN) return null
+  // 1) INCR, 2) if first time set PEXPIRE, 3) PTTL
+  const incrRes = await upstashPipeline([["INCR", key]])
+  const count = Array.isArray(incrRes) ? incrRes[0]?.result ?? 0 : 0
+  if (count === 1) {
+    await upstashPipeline([["PEXPIRE", key, windowMs]])
+  }
+  const ttlRes = await upstashPipeline([["PTTL", key]])
+  const ttlMs = Array.isArray(ttlRes) ? Math.max(0, ttlRes[0]?.result ?? windowMs) : windowMs
+  return { count, ttlMs }
+}
 
 /**
  * Clear rate limit store - used for testing
@@ -105,44 +140,42 @@ export function checkRateLimit(
 } {
   const now = Date.now()
   const key = `${identifier}_${config.windowMs}`
-  
-  // Clean up expired entries periodically
-  if (Math.random() < 0.1) { // 10% chance to cleanup
+
+  // Try Redis (Upstash) first
+  // Note: This is sync-ish wrapper; route handlers can be async if needed elsewhere
+  let redisCount: number | null = null
+  let redisTTL: number | null = null
+  try {
+    // @ts-ignore - allow top-level await-ish via deopt to sync path
+    const redisRes = global.__rl_sync__
+      ? null
+      : null
+    // We can't await here in a sync function; thus, keep in-memory as primary path
+  } catch {}
+
+  // In-memory fallback (primary path to keep sync signature)
+  if (Math.random() < 0.1) {
     cleanupExpiredEntries()
   }
-  
-  // Get or create rate limit entry
+
   let entry = rateLimitStore[key]
-  
   if (!entry || entry.resetTime <= now) {
-    // Create new entry or reset expired one
-    entry = {
-      count: 0,
-      resetTime: now + config.windowMs
-    }
+    entry = { count: 0, resetTime: now + config.windowMs }
     rateLimitStore[key] = entry
   }
-  
-  // Increment request count
   entry.count++
-  
+
   const isAllowed = entry.count <= config.maxRequests
   const remaining = Math.max(0, config.maxRequests - entry.count)
-  
   const result = {
     isAllowed,
     limit: config.maxRequests,
     remaining,
     resetTime: entry.resetTime
   }
-  
   if (!isAllowed) {
-    return {
-      ...result,
-      retryAfter: Math.ceil((entry.resetTime - now) / 1000)
-    }
+    return { ...result, retryAfter: Math.ceil((entry.resetTime - now) / 1000) }
   }
-  
   return result
 }
 
@@ -153,7 +186,7 @@ export function withRateLimit(config: RateLimitConfig) {
   return async function rateLimitMiddleware(): Promise<NextResponse | null> {
     try {
       const clientIP = await getClientIP()
-      const result = checkRateLimit(clientIP, config)
+      const result = await checkRateLimitAsync(clientIP, config)
       
       // Add rate limit headers to all responses
       const headers = {
@@ -187,6 +220,41 @@ export function withRateLimit(config: RateLimitConfig) {
       return null
     }
   }
+}
+
+/**
+ * Async version that uses Redis (Upstash) if configured, else in-memory
+ */
+export async function checkRateLimitAsync(
+  identifier: string,
+  config: RateLimitConfig
+): Promise<{
+  isAllowed: boolean
+  limit: number
+  remaining: number
+  resetTime: number
+  retryAfter?: number
+}> {
+  const now = Date.now()
+  const key = `${identifier}_${config.windowMs}`
+
+  if (UPSTASH_URL && UPSTASH_TOKEN) {
+    try {
+      const res = await redisIncrementAndGetTTL(key, config.windowMs)
+      if (res) {
+        const isAllowed = res.count <= config.maxRequests
+        const remaining = Math.max(0, config.maxRequests - res.count)
+        const resetTime = now + res.ttlMs
+        const base = { isAllowed, limit: config.maxRequests, remaining, resetTime }
+        return isAllowed ? base : { ...base, retryAfter: Math.ceil(res.ttlMs / 1000) }
+      }
+    } catch (e) {
+      logger.warn('RateLimit Redis fallback due to error', e)
+    }
+  }
+
+  // Fallback to sync in-memory
+  return checkRateLimit(identifier, config)
 }
 
 /**

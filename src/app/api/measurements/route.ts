@@ -3,7 +3,6 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 
-import { logger } from '@/lib/logger'
 // GET /api/measurements - Obtener mediciones del usuario
 export async function GET(req: NextRequest) {
 	try {
@@ -79,7 +78,7 @@ export async function GET(req: NextRequest) {
 		})
 
 	} catch (error) {
-		logger.error('Error fetching measurements:', error, 'API')
+		console.error('Error fetching measurements:', error)
 		return NextResponse.json(
 			{ error: 'Error al obtener mediciones' },
 			{ status: 500 }
@@ -137,7 +136,7 @@ export async function POST(req: NextRequest) {
 		return NextResponse.json(measurement, { status: 201 })
 
 	} catch (error) {
-		logger.error('Error creating measurement:', error, 'API')
+		console.error('Error creating measurement:', error)
 		return NextResponse.json(
 			{ error: 'Error al crear medición' },
 			{ status: 500 }

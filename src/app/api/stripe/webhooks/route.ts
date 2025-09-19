@@ -7,6 +7,235 @@ import { prisma } from '@/lib/db'
 import { logger } from '@/lib/logger'
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!
 
+// Helper functions
+async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
+	const customerId = subscription.customer as string
+	const subscriptionId = subscription.id
+	const priceId = subscription.items.data[0]?.price.id
+
+	if (!customerId || !priceId) return
+
+	// Obtener información del plan
+	const plan = getPlanByPrice(priceId)
+	if (!plan) {
+		logger.error(`Plan not found for price ID: ${priceId}`, 'API')
+		return
+	}
+
+	// Buscar el usuario por suscripciones con customer ID
+	const user = await prisma.user.findFirst({
+		where: {
+			subscriptions: {
+				some: {
+					stripeCustomerId: customerId
+				}
+			}
+		}
+	})
+
+	if (!user) {
+		logger.error(`User not found for customer ID: ${customerId}`, 'API')
+		return
+	}
+
+	// Actualizar o crear suscripción
+	await prisma.subscription.upsert({
+		where: {
+			stripeSubscriptionId: subscriptionId
+		},
+		update: {
+			status: mapStripeStatusToPrisma(subscription.status),
+			planType: plan,
+			stripePriceId: priceId,
+			currentPeriodStart: new Date(subscription.current_period_start * 1000),
+			currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+			cancelAtPeriodEnd: subscription.cancel_at_period_end
+		},
+		create: {
+			userId: user.id,
+			stripeSubscriptionId: subscriptionId,
+			stripeCustomerId: customerId,
+			status: mapStripeStatusToPrisma(subscription.status),
+			planType: plan,
+			stripePriceId: priceId,
+			currentPeriodStart: new Date(subscription.current_period_start * 1000),
+			currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+			cancelAtPeriodEnd: subscription.cancel_at_period_end
+		}
+	})
+
+	// Actualizar el rol del usuario si es necesario
+	if (plan === 'TRAINER' && user.role !== 'TRAINER') {
+		await prisma.user.update({
+			where: { id: user.id },
+			data: { role: 'TRAINER' }
+		})
+	}
+
+	logger.info(`Subscription updated for user ${user.id}: ${plan}`, 'API')
+}
+
+async function handleSubscriptionCancellation(subscription: Stripe.Subscription) {
+	const subscriptionId = subscription.id
+
+	await prisma.subscription.update({
+		where: {
+			stripeSubscriptionId: subscriptionId
+		},
+		data: {
+			status: 'CANCELED'
+		}
+	})
+
+	logger.info(`Subscription canceled: ${subscriptionId}`, 'API')
+}
+
+async function handleSuccessfulPayment(invoice: Stripe.Invoice) {
+	const subscriptionId = invoice.subscription as string
+
+	if (subscriptionId) {
+		await prisma.subscription.update({
+			where: {
+				stripeSubscriptionId: subscriptionId
+			},
+			data: {
+				status: 'ACTIVE'
+			}
+		})
+	}
+
+	logger.info(`Payment successful for subscription: ${subscriptionId}`, 'API')
+}
+
+async function handleFailedPayment(invoice: Stripe.Invoice) {
+	const subscriptionId = invoice.subscription as string
+
+	if (subscriptionId) {
+		await prisma.subscription.update({
+			where: {
+				stripeSubscriptionId: subscriptionId
+			},
+			data: {
+				status: 'PAST_DUE'
+			}
+		})
+	}
+
+	logger.error(`Payment failed for subscription: ${subscriptionId}`, 'API')
+}
+
+async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
+	const customerId = session.customer as string
+	const subscriptionId = session.subscription as string
+
+	if (!customerId) return
+
+	// Buscar el usuario por email si existe
+	if (session.customer_details?.email) {
+		const user = await prisma.user.findUnique({
+			where: { email: session.customer_details.email }
+		})
+
+		if (user && subscriptionId) {
+			// Actualizar la suscripción con el customer ID de Stripe
+			await prisma.subscription.updateMany({
+				where: {
+					userId: user.id,
+					stripeSubscriptionId: subscriptionId
+				},
+				data: {
+					stripeCustomerId: customerId
+				}
+			})
+		}
+	}
+
+	logger.info(`Checkout completed for customer ${customerId}`, 'API')
+}
+
+async function handleTrialWillEnd(subscription: Stripe.Subscription) {
+	const customerId = subscription.customer as string
+	
+	// Encontrar el usuario
+	const user = await prisma.user.findFirst({
+		where: {
+			subscriptions: {
+				some: {
+					stripeCustomerId: customerId
+				}
+			}
+		}
+	})
+
+	if (!user) {
+		logger.error(`User not found for trial ending notification: ${customerId}`, 'API')
+		return
+	}
+
+	// Aquí puedes agregar lógica para enviar notificaciones
+	// Por ejemplo, enviar un email recordando que el trial termina pronto
+	
+	logger.info(`Trial will end for user ${user.id}`, 'API')
+
+	// Opcional: Crear una notificación en la base de datos
+	try {
+		await prisma.notification.create({
+			data: {
+				userId: user.id,
+				title: 'Trial Ending Soon',
+				message: 'Your trial period will end soon. Please update your subscription to continue using our services.',
+				type: 'subscription',
+				priority: 'high'
+			}
+		})
+	} catch (error) {
+		logger.error('Failed to create trial ending notification:', error, 'API')
+	}
+}
+
+async function handleCustomerUpdated(customer: Stripe.Customer) {
+	// Actualizar información del cliente si es necesario
+	const user = await prisma.user.findFirst({
+		where: {
+			subscriptions: {
+				some: {
+					stripeCustomerId: customer.id
+				}
+			}
+		}
+	})
+
+	if (user && customer.email && customer.email !== user.email) {
+		// Actualizar email si cambió
+		await prisma.user.update({
+			where: { id: user.id },
+			data: { email: customer.email }
+		})
+		logger.info(`Updated email for user ${user.id}`, 'API')
+	}
+}
+
+function mapStripeStatusToPrisma(stripeStatus: string) {
+	switch (stripeStatus) {
+		case 'active':
+			return 'ACTIVE'
+		case 'canceled':
+			return 'CANCELED'
+		case 'incomplete':
+			return 'INCOMPLETE'
+		case 'incomplete_expired':
+			return 'INCOMPLETE_EXPIRED'
+		case 'past_due':
+			return 'PAST_DUE'
+		case 'trialing':
+			return 'TRIALING'
+		case 'unpaid':
+			return 'UNPAID'
+		default:
+			return 'INACTIVE'
+	}
+}
+
 export async function POST(req: NextRequest) {
   const body = await req.text()
   const headersList = await headers()
@@ -50,12 +279,30 @@ export async function POST(req: NextRequest) {
 
       case 'customer.created': {
         const customer = event.data.object as Stripe.Customer
-        logger.debug('New customer created: ${customer.id}', 'API')
+        logger.info(`New customer created: ${customer.id}`, 'API')
+        break
+      }
+
+      case 'checkout.session.completed': {
+        const session = event.data.object as Stripe.Checkout.Session
+        await handleCheckoutCompleted(session)
+        break
+      }
+
+      case 'customer.subscription.trial_will_end': {
+        const subscription = event.data.object as Stripe.Subscription
+        await handleTrialWillEnd(subscription)
+        break
+      }
+
+      case 'customer.updated': {
+        const customer = event.data.object as Stripe.Customer
+        await handleCustomerUpdated(customer)
         break
       }
 
       default:
-        logger.debug('Unhandled event type: ${event.type}', 'API')
+        logger.info(`Unhandled event type: ${event.type}`, 'API')
     }
 
     return NextResponse.json({ received: true })
@@ -66,147 +313,4 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     )
   }
-}
-
-async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
-  const customerId = subscription.customer as string
-  const subscriptionId = subscription.id
-  const status = subscription.status
-  const currentPeriodStart = new Date(subscription.current_period_start * 1000)
-  const currentPeriodEnd = new Date(subscription.current_period_end * 1000)
-  
-  // Obtener el precio y el plan asociado
-  const priceId = subscription.items.data[0]?.price.id
-  const planType = getPlanByPrice(priceId) || 'FREE'
-
-  // Buscar el usuario asociado con este customer de Stripe
-  const user = await prisma.user.findFirst({
-    where: {
-      subscriptions: {
-        some: {
-          stripeCustomerId: customerId
-        }
-      }
-    },
-    include: {
-      subscriptions: true
-    }
-  })
-
-  if (!user) {
-    logger.error('User not found for Stripe customer: ${customerId}', 'API')
-    return
-  }
-
-  // Actualizar o crear la suscripción
-  await prisma.subscription.upsert({
-    where: {
-      stripeSubscriptionId: subscriptionId
-    },
-    update: {
-      status: mapStripeStatusToPrisma(status),
-      planType: planType as any,
-      currentPeriodStart,
-      currentPeriodEnd,
-      stripePriceId: priceId,
-    },
-    create: {
-      userId: user.id,
-      stripeCustomerId: customerId,
-      stripeSubscriptionId: subscriptionId,
-      stripePriceId: priceId,
-      planType: planType as any,
-      status: mapStripeStatusToPrisma(status),
-      currentPeriodStart,
-      currentPeriodEnd,
-    }
-  })
-
-  // Si es entrenador y tiene plan TRAINER/ENTERPRISE, crear perfil de entrenador
-  if ((planType === 'TRAINER' || planType === 'ENTERPRISE') && user.role === 'CLIENT') {
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { role: 'TRAINER' }
-    })
-
-    // Crear perfil de entrenador si no existe
-    await prisma.trainerProfile.upsert({
-      where: { userId: user.id },
-      update: {},
-      create: {
-        userId: user.id,
-        isActive: true,
-        maxClients: planType === 'TRAINER' ? 50 : -1, // -1 = ilimitado
-      }
-    })
-  }
-
-  logger.debug('Subscription ${subscriptionId} updated for user ${user.id}', 'API')
-}
-
-async function handleSubscriptionCancellation(subscription: Stripe.Subscription) {
-  const subscriptionId = subscription.id
-
-  await prisma.subscription.update({
-    where: {
-      stripeSubscriptionId: subscriptionId
-    },
-    data: {
-      status: 'CANCELED',
-      currentPeriodEnd: new Date(), // Termina inmediatamente
-    }
-  })
-
-  logger.debug('Subscription ${subscriptionId} cancelled', 'API')
-}
-
-async function handleSuccessfulPayment(invoice: Stripe.Invoice) {
-  const customerId = invoice.customer as string
-  const subscriptionId = invoice.subscription as string
-
-  // Actualizar estado de la suscripción si estaba en estado problema
-  if (subscriptionId) {
-    await prisma.subscription.update({
-      where: {
-        stripeSubscriptionId: subscriptionId
-      },
-      data: {
-        status: 'ACTIVE'
-      }
-    })
-  }
-
-  logger.debug('Payment succeeded for customer ${customerId}', 'API')
-}
-
-async function handleFailedPayment(invoice: Stripe.Invoice) {
-  const customerId = invoice.customer as string
-  const subscriptionId = invoice.subscription as string
-
-  if (subscriptionId) {
-    await prisma.subscription.update({
-      where: {
-        stripeSubscriptionId: subscriptionId
-      },
-      data: {
-        status: 'PAST_DUE'
-      }
-    })
-  }
-
-  logger.debug('Payment failed for customer ${customerId}', 'API')
-}
-
-function mapStripeStatusToPrisma(stripeStatus: string) {
-  const statusMap: Record<string, string> = {
-    'incomplete': 'INCOMPLETE',
-    'incomplete_expired': 'INCOMPLETE_EXPIRED',
-    'trialing': 'TRIALING',
-    'active': 'ACTIVE',
-    'past_due': 'PAST_DUE',
-    'canceled': 'CANCELED',
-    'unpaid': 'UNPAID',
-  }
-
-  return statusMap[stripeStatus] || 'INCOMPLETE'
 }
