@@ -1,56 +1,19 @@
 {
-	"$schema": "https://openapi.vercel.sh/vercel.json",
-	"framework": "nextjs",
+	"version": 2,
 	"buildCommand": "npm run build",
-	"devCommand": "npm run dev",
-	"installCommand": "npm ci",
+	"installCommand": "npm install --legacy-peer-deps",
 	"outputDirectory": ".next",
-	"cleanUrls": true,
-	"trailingSlash": false,
+	"framework": "nextjs",
+	"regions": ["iad1"],
 	"functions": {
-		"src/app/api/stripe/webhooks/route.ts": {
-			"maxDuration": 30
-		},
-		"src/app/api/auth/**/*.ts": {
-			"maxDuration": 10
-		},
 		"src/app/api/**/*.ts": {
-			"maxDuration": 15
+			"maxDuration": 30
 		}
 	},
-	"rewrites": [
-		{
-			"source": "/api/stripe/webhooks",
-			"destination": "/api/stripe/webhooks"
-		},
-		{
-			"source": "/healthz",
-			"destination": "/api/health"
-		}
-	],
-	"redirects": [
-		{
-			"source": "/dashboard",
-			"destination": "/dashboard/overview",
-			"permanent": false
-		}
-	],
 	"headers": [
 		{
-			"source": "/api/(.*)",
+			"source": "/(.*)",
 			"headers": [
-				{
-					"key": "Access-Control-Allow-Origin",
-					"value": "*"
-				},
-				{
-					"key": "Access-Control-Allow-Methods",
-					"value": "GET, POST, PUT, DELETE, OPTIONS"
-				},
-				{
-					"key": "Access-Control-Allow-Headers",
-					"value": "Content-Type, Authorization, X-Requested-With"
-				},
 				{
 					"key": "X-Content-Type-Options",
 					"value": "nosniff"
@@ -62,15 +25,6 @@
 				{
 					"key": "X-XSS-Protection",
 					"value": "1; mode=block"
-				}
-			]
-		},
-		{
-			"source": "/(.*)",
-			"headers": [
-				{
-					"key": "Strict-Transport-Security",
-					"value": "max-age=31536000; includeSubDomains; preload"
 				},
 				{
 					"key": "Referrer-Policy",
@@ -81,20 +35,37 @@
 					"value": "camera=(), microphone=(), geolocation=()"
 				}
 			]
-		}
-	],
-	"regions": ["iad1"],
-	"crons": [
-		{
-			"path": "/api/cron/cleanup",
-			"schedule": "0 2 * * *"
 		},
 		{
-			"path": "/api/cron/backup",
-			"schedule": "0 3 * * 0"
+			"source": "/api/(.*)",
+			"headers": [
+				{
+					"key": "Cache-Control",
+					"value": "no-store, no-cache, must-revalidate"
+				}
+			]
+		}
+	],
+	"redirects": [
+		{
+			"source": "/login",
+			"destination": "/auth/signin",
+			"permanent": false
+		},
+		{
+			"source": "/register",
+			"destination": "/auth/signup",
+			"permanent": false
+		}
+	],
+	"rewrites": [
+		{
+			"source": "/health",
+			"destination": "/api/health"
 		}
 	],
 	"env": {
+		"NEXTAUTH_URL": "https://kairos.vercel.app",
 		"NODE_ENV": "production"
 	}
 }

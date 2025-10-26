@@ -1,4 +1,0 @@
-# Placeholder for notification sound
-# In a real implementation, this would be a WAV audio file
-# For now, we'll use the default system notification sound
-# To add a custom sound, replace this file with an actual .wav audio file

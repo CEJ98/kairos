@@ -1,171 +1,85 @@
-import './globals.css'
-import type { Metadata } from 'next'
-import { Inter, JetBrains_Mono } from 'next/font/google'
-import { Providers } from '@/components/providers'
-import { seoConfig, generateJSONLD } from '@/lib/seo'
-import Script from 'next/script'
+import '../../sentry.client.config';
+import type { Metadata } from 'next';
+import type { ReactNode } from 'react';
+import Script from 'next/script';
+import { Inter, Poppins } from 'next/font/google';
+import { ThemeProvider } from '@/components/providers/theme-provider';
+import { SessionProvider } from '@/components/providers/session-provider';
+import { Toaster } from '@/components/ui/toaster';
+import { Toaster as SonnerToaster } from 'sonner';
+import { CookieBanner } from '@/components/ui/cookie-banner';
+import { PwaProvider } from '@/components/providers/pwa-provider';
+import '@/app/globals.css';
 
-import { logger } from '@/lib/logger'
-const inter = Inter({ 
+const inter = Inter({
   subsets: ['latin'],
-  display: 'swap',
-  preload: true,
-  variable: '--font-inter'
-})
+  variable: '--font-inter',
+  weight: ['400', '500', '600']
+});
 
-const jetbrainsMono = JetBrains_Mono({
+const poppins = Poppins({
   subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-jetbrains-mono'
-})
+  variable: '--font-poppins',
+  weight: ['600', '700']
+});
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXTAUTH_URL || 'http://localhost:3000'),
-  title: seoConfig.title,
-  description: seoConfig.description,
-  keywords: seoConfig.keywords.join(', '),
-  authors: [{ name: seoConfig.author }],
-  creator: seoConfig.author,
-  publisher: seoConfig.author,
-  robots: 'index, follow',
-  
-  openGraph: {
-    title: seoConfig.title,
-    description: seoConfig.description,
-    url: seoConfig.canonical,
-    siteName: seoConfig.siteName,
-    images: seoConfig.images,
-    locale: seoConfig.locale,
-    type: 'website'
-  },
-  
-  twitter: {
-    card: 'summary_large_image',
-    title: seoConfig.title,
-    description: seoConfig.description,
-    creator: seoConfig.twitter.handle,
-    images: seoConfig.images
-  },
-  
+  applicationName: 'Kairos Fitness',
+  title: 'Kairos Fitness',
+  description:
+    'Entrenamiento inteligente con planes periodizados, seguimiento de progreso y analíticas accionables.',
   manifest: '/manifest.json',
-  
+  icons: {
+    icon: [
+      { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' }
+    ],
+    apple: [
+      { url: '/icons/apple-icon-180.png', sizes: '180x180', type: 'image/png' }
+    ]
+  },
+  appleWebApp: {
+    capable: true,
+    title: 'Kairos Fitness',
+    statusBarStyle: 'black-translucent'
+  },
+  formatDetection: {
+    telephone: false
+  },
   other: {
-    'apple-mobile-web-app-capable': 'yes',
-    'apple-mobile-web-app-status-bar-style': 'black-translucent',
-    'mobile-web-app-capable': 'yes',
-    'theme-color': '#10B981',
-    'msapplication-TileColor': '#10B981'
-  }
-}
+    'msapplication-TileColor': '#0E1726'
+  },
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#FFFFFF' },
+    { media: '(prefers-color-scheme: dark)', color: '#0E1726' }
+  ]
+};
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: ReactNode }) {
+  const umamiWebsiteId = process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID ?? process.env.UMAMI_WEBSITE_ID;
+  const umamiSrc = process.env.NEXT_PUBLIC_UMAMI_SRC ?? process.env.UMAMI_SRC;
+  const showCookieBanner = (process.env.NEXT_PUBLIC_ENABLE_COOKIE_BANNER ?? process.env.ENABLE_COOKIE_BANNER) === 'true';
   return (
-    <html lang="es" suppressHydrationWarning className={`${inter.variable} ${jetbrainsMono.variable}`}>
-      <head>
-        <link rel="icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link rel="dns-prefetch" href="//api.stripe.com" />
-        
-        {/* Structured Data */}
-        <Script
-          id="organization-schema"
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify(generateJSONLD('Organization'))
-          }}
-        />
-        <Script
-          id="website-schema"
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify(generateJSONLD('WebSite'))
-          }}
-        />
-      </head>
-      <body className={`${inter.className} font-sans antialiased`}>
-        {/* Skip to content for accessibility */}
-        <a href="#main-content" className="skip-link">Saltar al contenido</a>
-        <Providers>
-          <main id="main-content">
+    <html lang="es" suppressHydrationWarning>
+      <body className={`${inter.variable} ${poppins.variable} font-sans bg-background`}>
+        <SessionProvider>
+          <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
             {children}
-          </main>
-        </Providers>
-        
-        {/* Performance and Analytics Scripts */}
-        <Script
-          id="performance-init"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-              // Initialize performance monitoring
-              if (typeof window !== 'undefined') {
-                // Initialize Web Vitals monitoring
-                import('/src/lib/performance-enhancements').then(module => {
-                  if (module.WebVitalsMonitor) {
-                    module.WebVitalsMonitor.initWebVitals();
-                  }
-                }).catch(err => console.warn('Performance monitoring not available:', err));
-                
-                // Initialize performance monitor
-                import('/src/lib/performance-monitor').then(module => {
-                  if (module.initializePerformanceMonitoring) {
-                    module.initializePerformanceMonitoring();
-                  }
-                }).catch(err => console.warn('Performance monitor not available:', err));
-                
-                // Resource hints - only preload existing resources
-                const criticalResources = [];
-                criticalResources.forEach(resource => {
-                  const link = document.createElement('link');
-                  link.rel = 'preload';
-                  link.as = 'image';
-                  link.href = resource;
-                  document.head.appendChild(link);
-                });
-                
-                // Service Worker registration - Temporarily disabled for debugging
-                // if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
-                //   navigator.serviceWorker.register('/sw.js').catch(console.error);
-                // }
-              }
-            `
-          }}
-        />
-        
-        {/* Google Analytics - Production only */}
-        {process.env.NODE_ENV === 'production' && process.env.GOOGLE_ANALYTICS_ID && (
-          <>
-            <Script
-              src={`https://www.googletagmanager.com/gtag/js?id=${process.env.GOOGLE_ANALYTICS_ID}`}
-              strategy="afterInteractive"
-            />
-            <Script
-              id="google-analytics"
-              strategy="afterInteractive"
-              dangerouslySetInnerHTML={{
-                __html: `
-                  window.dataLayer = window.dataLayer || [];
-                  function gtag(){dataLayer.push(arguments);}
-                  gtag('js', new Date());
-                  gtag('config', '${process.env.GOOGLE_ANALYTICS_ID}', {
-                    page_title: document.title,
-                    page_location: window.location.href,
-                    custom_map: {
-                      custom_parameter_1: 'fitness_app'
-                    }
-                  });
-                `
-              }}
-            />
-          </>
-        )}
+            <Toaster />
+            <SonnerToaster position="top-right" richColors />
+          </ThemeProvider>
+        </SessionProvider>
+        <PwaProvider />
+        {showCookieBanner ? <CookieBanner /> : null}
+        {umamiWebsiteId && umamiSrc ? (
+          <Script
+            src={umamiSrc}
+            data-website-id={umamiWebsiteId}
+            data-do-not-track="true"
+            strategy="lazyOnload"
+          />
+        ) : null}
       </body>
     </html>
-  )
+  );
 }

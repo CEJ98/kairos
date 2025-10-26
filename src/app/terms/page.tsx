@@ -1,137 +1,21 @@
-'use client'
-
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { ArrowLeft, FileText, Shield, Users, AlertCircle } from 'lucide-react'
-import Link from 'next/link'
+import { AppShell } from '@/components/layout/app-shell';
 
 export default function TermsPage() {
-	return (
-		<div className="min-h-screen bg-gray-50 py-8">
-			<div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-				{/* Header */}
-				<div className="mb-8">
-					<Link href="/" className="inline-flex items-center gap-2 text-green-600 hover:text-green-700 mb-4">
-						<ArrowLeft className="h-4 w-4" />
-						Volver al inicio
-					</Link>
-					<h1 className="text-3xl font-bold text-gray-900">Términos y Condiciones</h1>
-					<p className="text-gray-600 mt-2">Última actualización: {new Date().toLocaleDateString('es-ES')}</p>
-				</div>
-
-				{/* Content */}
-				<div className="space-y-6">
-					<Card>
-						<CardHeader>
-							<CardTitle className="flex items-center gap-2">
-								<FileText className="h-5 w-5" />
-								1. Aceptación de los Términos
-							</CardTitle>
-						</CardHeader>
-						<CardContent>
-							<p className="text-gray-700">
-								Al acceder y utilizar Kairos Fitness, usted acepta estar sujeto a estos términos y condiciones de uso. 
-								Si no está de acuerdo con alguna parte de estos términos, no debe utilizar nuestro servicio.
-							</p>
-						</CardContent>
-					</Card>
-
-					<Card>
-						<CardHeader>
-							<CardTitle className="flex items-center gap-2">
-								<Users className="h-5 w-5" />
-								2. Uso del Servicio
-							</CardTitle>
-						</CardHeader>
-						<CardContent className="space-y-4">
-							<div>
-								<h4 className="font-semibold mb-2">2.1 Elegibilidad</h4>
-								<p className="text-gray-700">
-									Debe tener al menos 18 años para utilizar este servicio. Al registrarse, declara que toda la información proporcionada es veraz y precisa.
-								</p>
-							</div>
-							<div>
-								<h4 className="font-semibold mb-2">2.2 Cuenta de Usuario</h4>
-								<p className="text-gray-700">
-									Es responsable de mantener la confidencialidad de su cuenta y contraseña. Usted es responsable de todas las actividades que ocurran bajo su cuenta.
-								</p>
-							</div>
-						</CardContent>
-					</Card>
-
-					<Card>
-						<CardHeader>
-							<CardTitle className="flex items-center gap-2">
-								<Shield className="h-5 w-5" />
-								3. Privacidad y Datos
-							</CardTitle>
-						</CardHeader>
-						<CardContent>
-							<p className="text-gray-700">
-								Nos comprometemos a proteger su privacidad. El uso de sus datos personales se rige por nuestra 
-								<Link href="/privacy" className="text-green-600 hover:underline">Política de Privacidad</Link>, 
-								que forma parte integral de estos términos.
-							</p>
-						</CardContent>
-					</Card>
-
-					<Card>
-						<CardHeader>
-							<CardTitle className="flex items-center gap-2">
-								<AlertCircle className="h-5 w-5" />
-								4. Limitación de Responsabilidad
-							</CardTitle>
-						</CardHeader>
-						<CardContent className="space-y-4">
-							<div>
-								<h4 className="font-semibold mb-2">4.1 Asesoramiento Médico</h4>
-								<p className="text-gray-700">
-									Kairos Fitness no proporciona asesoramiento médico. Consulte con un profesional de la salud antes de comenzar cualquier programa de ejercicios.
-								</p>
-							</div>
-							<div>
-								<h4 className="font-semibold mb-2">4.2 Uso bajo su Propio Riesgo</h4>
-								<p className="text-gray-700">
-									El uso de nuestros servicios es bajo su propio riesgo. No nos hacemos responsables de lesiones o daños que puedan resultar del uso de la plataforma.
-								</p>
-							</div>
-						</CardContent>
-					</Card>
-
-					<Card>
-						<CardHeader>
-							<CardTitle>5. Modificaciones</CardTitle>
-						</CardHeader>
-						<CardContent>
-							<p className="text-gray-700">
-								Nos reservamos el derecho de modificar estos términos en cualquier momento. 
-								Las modificaciones entrarán en vigor inmediatamente después de su publicación en la plataforma.
-							</p>
-						</CardContent>
-					</Card>
-
-					<Card>
-						<CardHeader>
-							<CardTitle>6. Contacto</CardTitle>
-						</CardHeader>
-						<CardContent>
-							<p className="text-gray-700">
-								Si tiene preguntas sobre estos términos, puede contactarnos a través de nuestra 
-								<Link href="/contact" className="text-green-600 hover:underline">página de contacto</Link>.
-							</p>
-						</CardContent>
-					</Card>
-				</div>
-
-				{/* Footer Actions */}
-				<div className="mt-8 flex justify-center">
-					<Link href="/">
-						<Button>
-							Volver al Inicio
-						</Button>
-					</Link>
-				</div>
-			</div>
-		</div>
-	)
+  return (
+    <AppShell variant="landing" showAuthControls>
+      <section className="mx-auto max-w-3xl py-10">
+        <h1 className="font-display text-3xl font-bold text-foreground">Términos de Servicio</h1>
+        <p className="mt-3 text-sm text-neutral-600">
+          Uso personal no comercial. No garantizamos resultados de entrenamiento. No
+          compartas credenciales. El servicio puede cambiar sin previo aviso.
+        </p>
+        <ul className="mt-6 list-disc space-y-2 pl-6 text-sm text-neutral-700">
+          <li>Contenido con fines informativos, no asesoría médica.</li>
+          <li>Debes ser mayor de edad o contar con supervisión.</li>
+          <li>Nos reservamos el derecho de suspender cuentas por abuso.</li>
+          <li>Reporta problemas y fallos; trabajamos para solucionarlos.</li>
+        </ul>
+      </section>
+    </AppShell>
+  );
 }

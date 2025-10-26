@@ -1,7 +1,0 @@
-<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="128" height="128" rx="28" fill="#10B981"/>
-  <circle cx="64" cy="64" r="32" fill="none" stroke="white" stroke-width="4"/>
-  <circle cx="64" cy="64" r="16" fill="white"/>
-  <path d="M64 24L70 42H88L74 52L78 70L64 60L50 70L54 52L40 42H58L64 24Z" fill="white" opacity="0.9"/>
-  <text x="64" y="108" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="12" font-weight="bold">KAIROS</text>
-</svg>

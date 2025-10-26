@@ -1,833 +1,265 @@
-// Prisma Schema para Kairos Fitness App - SQLite version
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-// =================== USUARIOS ===================
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  oauth_token_secret String?
+  oauth_token        String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// SQLite connector in Prisma does not support enums; use string fields instead.
+
 model User {
-  id          String   @id @default(cuid())
-  email       String   @unique
-  name        String?
-  avatar      String?
-  password    String?
-  role        String   @default("CLIENT") // CLIENT, TRAINER, ADMIN
-  isVerified  Boolean  @default(false)
-  isOnline    Boolean  @default(false)
-  lastSeen    DateTime @default(now())
-  resetToken  String?
-  resetTokenExpiry DateTime?
-  notificationPreferences String? // JSON string for notification preferences
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relaciones como Cliente
-  workouts         Workout[]
-  workoutSessions  WorkoutSession[]
-  clientProfiles   ClientProfile[]
-  subscriptions    Subscription[]
-
-  // Relaciones como Entrenador
-  trainerProfile   TrainerProfile?
-  createdWorkouts  Workout[]        @relation("CreatedWorkouts")
-  
-  // Nutrición
-  createdNutritionPlans NutritionPlan[] @relation("CreatedNutritionPlans")
-  assignedNutritionPlans NutritionPlan[] @relation("AssignedNutritionPlans")
-  
-  // Notificaciones
-  notifications    Notification[]
-  pushSubscriptions PushSubscription[]
-  
-  // Comunicación
-  sentMessages     Message[]
-  conversationsAsUser1 Conversation[] @relation("ConversationUser1")
-  conversationsAsUser2 Conversation[] @relation("ConversationUser2")
-  
-  // Rutinas estructuradas
-  createdRoutines     Routine[] @relation("CreatedRoutines")
-  studentAssignments  RoutineAssignment[] @relation("StudentAssignments")
-  coachAssignments    RoutineAssignment[] @relation("CoachAssignments")
-  
-  // Métricas de progreso
-  progressMetrics     ProgressMetric[]
-  measurements        Measurement[]
-  
-  // Vínculos coach-alumno
-  coachLinks          CoachStudentLink[] @relation("CoachLinks")
-  studentLinks        CoachStudentLink[] @relation("StudentLinks")
-
-  @@map("users")
+  id            String        @id @default(cuid())
+  email         String        @unique
+  name          String?
+  passwordHash  String?
+  image         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  accounts      Account[]
+  sessions      Session[]
+  profile       Profile?
+  plans         Plan[]
+  bodyMetrics   BodyMetric[]
+  streaks       Streak[]
+  subscriptions Subscription[]
+  demoAccount   DemoAccount?
+  workouts      Workout[]     @relation("UserWorkouts")
 }
 
-// =================== PERFILES ===================
-model ClientProfile {
-  id       String @id @default(cuid())
-  userId   String
-  trainerId String?
-  
-  // Datos personales
-  age      Int?
-  weight   Float?
-  height   Float?
-  gender   String? // MALE, FEMALE, OTHER
-  
-  // Objetivos fitness
-  fitnessGoal    String? // WEIGHT_LOSS, MUSCLE_GAIN, etc.
-  activityLevel  String? // SEDENTARY, LIGHT, MODERATE, etc.
-  
-  // Timestamps
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  // Relaciones
-  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  trainer TrainerProfile?  @relation(fields: [trainerId], references: [id])
+model Profile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  age             Int?
+  heightCm        Float?
+  weightKg        Float?
+  trainingMax     Float?
+  progressionRule String @default("VOLUME")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  @@map("client_profiles")
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-model TrainerProfile {
-  id          String @id @default(cuid())
-  userId      String @unique
-  
-  // Información profesional
-  bio         String?
-  experience  Int?     // años de experiencia
-  specialties String?  // JSON string of specialties
-  hourlyRate  Float?   // tarifa por hora
-  
-  // Configuración
-  isActive    Boolean  @default(true)
-  maxClients  Int      @default(50)
-  
-  // Relaciones
-  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  clients     ClientProfile[]
+model Plan {
+  id              String          @id @default(cuid())
+  userId          String
+  goal            String
+  microcycleLength Int
+  mesocycleWeeks  Int
+  progressionRule String @default("VOLUME")
+  trainingMax     Float? @default(0)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 
-  @@map("trainer_profiles")
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workouts Workout[]
+  metrics  AdherenceMetric[]
+
+  @@index([userId, createdAt])
+  @@index([userId, updatedAt])
 }
 
-// =================== EJERCICIOS ===================
-model Exercise {
-  id          String @id @default(cuid())
-  name        String
-  description String?
-  
-  // Multimedia
-  imageUrl    String?
-  videoUrl    String?
-  gifUrl      String?
-  
-  // Categorización
-  category    String   // STRENGTH, CARDIO, FLEXIBILITY, etc.
-  muscleGroups String? // JSON string of muscle groups
-  equipments   String? // JSON string of equipment
-  difficulty  String   // BEGINNER, INTERMEDIATE, ADVANCED, EXPERT
-  
-  // Instrucciones
-  instructions String?
-  tips         String?
-  
-  // Métricas
-  isActive     Boolean @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  
-  // Relaciones
-  workoutExercises WorkoutExercise[]
-  exerciseLogs     ExerciseLog[]
-  personalRecords  PersonalRecord[]
-  routineSets      RoutineSet[]
-
-  @@map("exercises")
-}
-
-// =================== RUTINAS ===================
 model Workout {
-  id          String @id @default(cuid())
-  name        String
+  id          String            @id @default(cuid())
+  planId      String
+  userId      String?
+  title       String
   description String?
-  
-  // Propietario y asignación
-  creatorId   String
-  assignedToId String?
-  
-  // Configuración
-  isTemplate  Boolean @default(false)
-  isPublic    Boolean @default(false)
-  category    String? // STRENGTH, CARDIO, HIIT, etc.
-  duration    Int?    // minutos estimados
-  
-  // Métricas
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  // Relaciones
-  creator     User              @relation("CreatedWorkouts", fields: [creatorId], references: [id])
-  assignedTo  User?             @relation(fields: [assignedToId], references: [id])
-  exercises   WorkoutExercise[]
-  sessions    WorkoutSession[]
+  scheduledAt DateTime
+  completedAt DateTime?
+  microcycle  Int?
+  mesocycle   Int?
+  rpeTarget   Float?
+  restSeconds Int? @default(120)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
 
-  @@map("workouts")
+  plan Plan  @relation(fields: [planId], references: [id], onDelete: Cascade)
+  user User? @relation("UserWorkouts", fields: [userId], references: [id])
+
+  exercises WorkoutExercise[]
+  sets      WorkoutSet[]
+  adherenceMetrics AdherenceMetric[]
+
+  @@index([planId, scheduledAt])
+  @@index([userId, scheduledAt])
+  @@index([planId, completedAt])
+  @@index([userId, completedAt])
 }
 
 model WorkoutExercise {
-  id          String @id @default(cuid())
+  id          String   @id @default(cuid())
   workoutId   String
   exerciseId  String
-  order       Int    // orden en la rutina
-  
-  // Configuración del ejercicio
-  sets        Int?
-  reps        Int?
-  weight      Float?
-  duration    Int?    // segundos
-  distance    Float?  // metros/km
-  restTime    Int?    // segundos de descanso
-  
-  // Notas del entrenador
-  notes       String?
-  
-  // Relaciones
-  workout     Workout  @relation(fields: [workoutId], references: [id], onDelete: Cascade)
-  exercise    Exercise @relation(fields: [exerciseId], references: [id])
+  order       Int
+  targetSets  Int
+  targetReps  Int
+  rpeTarget   Float?
+  restSeconds Int
+  microcycle  Int? @default(1)
+  mesocycle   Int? @default(1)
+  createdAt   DateTime @default(now())
 
-  @@unique([workoutId, order])
-  @@map("workout_exercises")
+  workout  Workout  @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  exercise Exercise @relation(fields: [exerciseId], references: [id])
+
+  @@index([workoutId])
+  @@index([exerciseId])
 }
 
-// =================== SESIONES DE ENTRENAMIENTO ===================
-model WorkoutSession {
-  id          String @id @default(cuid())
-  userId      String
+model Exercise {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  videoUrl    String?
+  muscleGroup String
+  equipment   String
+  cues        String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workoutExercises WorkoutExercise[]
+  workoutSets       WorkoutSet[]
+}
+
+model WorkoutSet {
+  id          String   @id @default(cuid())
   workoutId   String
-  
-  // Timing
-  startTime   DateTime
-  endTime     DateTime?
-  duration    Int?        // segundos reales
-  
-  // Estado
-  status      String @default("IN_PROGRESS") // PLANNED, IN_PROGRESS, COMPLETED, etc.
-  
-  // Métricas generales
+  exerciseId  String
+  weight      Float
+  reps        Int
+  rpe         Float?
+  rir         Float?
+  restSeconds Int
   notes       String?
-  rating      Int?        // 1-5 estrellas
-  caloriesBurned Int?
-  
-  // Relaciones
-  user        User             @relation(fields: [userId], references: [id])
-  workout     Workout          @relation(fields: [workoutId], references: [id])
-  exercises   ExerciseLog[]
-  setLogs     SetLog[]
+  createdAt   DateTime @default(now())
 
-  @@map("workout_sessions")
+  workout  Workout  @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  exercise Exercise @relation(fields: [exerciseId], references: [id])
+
+  @@index([exerciseId, createdAt])
+  @@index([workoutId, createdAt])
 }
 
-model ExerciseLog {
-  id        String @id @default(cuid())
-  sessionId String
-  exerciseId String
-  order     Int
-  
-  // Performance real
-  setsCompleted    Int?
-  repsCompleted    String?   // JSON string of reps per set
-  weightUsed       String?   // JSON string of weight per set
-  durationActual   Int?      // segundos
-  distanceActual   Float?
-  
-  // Métricas
-  restTimeActual   Int?    // descanso real
-  difficulty       Int?    // 1-10
-  notes           String?
-  
-  // Relaciones
-  session         WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  exercise        Exercise       @relation(fields: [exerciseId], references: [id])
-
-  @@unique([sessionId, order])
-  @@map("exercise_logs")
-}
-
-// =================== SUSCRIPCIONES Y PAGOS ===================
-model Subscription {
-  id                String           @id @default(cuid())
-  userId            String
-  
-  // Stripe
-  stripeCustomerId     String?  @unique
-  stripeSubscriptionId String?  @unique
-  stripePriceId        String?
-  
-  // Plan
-  planType          String // FREE, BASIC, PRO, TRAINER, ENTERPRISE
-  status            String // ACTIVE, CANCELED, etc.
-  
-  // Fechas
-  currentPeriodStart DateTime?
-  currentPeriodEnd   DateTime?
-  cancelAtPeriodEnd  Boolean   @default(false)
-  
-  // Timestamps
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  
-  // Relaciones
-  user              User      @relation(fields: [userId], references: [id])
-
-  @@map("subscriptions")
-}
-
-// =================== COMUNICACIÓN ===================
-model Conversation {
-  id          String    @id @default(cuid())
-  user1Id     String
-  user2Id     String
-  lastMessage String?
-  lastMessageAt DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  
-  // Relaciones
-  user1       User      @relation("ConversationUser1", fields: [user1Id], references: [id], onDelete: Cascade)
-  user2       User      @relation("ConversationUser2", fields: [user2Id], references: [id], onDelete: Cascade)
-  messages    Message[]
-  
-  @@unique([user1Id, user2Id])
-  @@map("conversations")
-}
-
-model Message {
-  id             String       @id @default(cuid())
-  conversationId String
-  senderId       String
-  content        String
-  type           String       @default("TEXT") // TEXT, WORKOUT_ASSIGNMENT, etc.
-  isRead         Boolean      @default(false)
-  readAt         DateTime?
-  metadata       String?      // JSON string for additional data
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  
-  // Relaciones
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
-  
-  @@map("messages")
-}
-
-// =================== NOTIFICACIONES ===================
-model Notification {
-	id          String   @id @default(cuid())
-	userId      String
-	
-	// Contenido
-	title       String
-	message     String
-	type        String   // workout_reminder, achievement, etc.
-	priority    String   @default("medium") // low, medium, high, urgent
-	
-	// Estado
-	isRead      Boolean  @default(false)
-	isArchived  Boolean  @default(false)
-	readAt      DateTime?
-	archivedAt  DateTime?
-	
-	// Acciones
-	actionUrl   String?
-	actionLabel String?
-	
-	// Metadatos
-	metadata    String?  // JSON string
-	
-	// Timestamps
-	createdAt   DateTime @default(now())
-	updatedAt   DateTime @updatedAt
-	
-	// Relaciones
-	user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-	
-	@@map("notifications")
-}
-
-model PushSubscription {
-	id        String @id @default(cuid())
-	userId    String
-	
-	// Datos de la suscripción
-	endpoint  String
-	p256dh    String  // clave pública
-	auth      String  // clave de autenticación
-	
-	// Metadatos
-	userAgent String?
-	isActive  Boolean @default(true)
-	
-	// Timestamps
-	createdAt DateTime @default(now())
-	updatedAt DateTime @updatedAt
-	
-	// Relaciones
-	user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-	
-	@@unique([userId, endpoint])
-	@@map("push_subscriptions")
-}
-
-// =================== PROGRESO Y MÉTRICAS ===================
-model BodyMeasurement {
-  id        String @id @default(cuid())
-  userId    String
-  
-  // Métricas corporales
-  weight    Float?
-  bodyFat   Float?
-  muscle    Float?
-  
-  // Medidas
-  chest     Float?
-  waist     Float?
-  hips      Float?
-  arms      Float?
-  thighs    Float?
-  
-  // Fecha
-  measuredAt DateTime
-  notes      String?
-
-  @@map("body_measurements")
-}
-
-// =================== MEDICIONES ESPECÍFICAS ===================
-model Measurement {
+model BodyMetric {
   id        String   @id @default(cuid())
   userId    String
-  
-  // Métricas solicitadas
-  peso      Float?   // peso en kg
-  grasa     Float?   // porcentaje de grasa corporal
-  cintura   Float?   // medida de cintura en cm
-  
-  // Fecha de la medición
-  fecha     DateTime @default(now())
-  
-  // Notas adicionales
-  notas     String?
-  
-  // Timestamps
+  date      DateTime @default(now())
+  weightKg  Float?
+  bodyFat   Float?
+  neckCm    Float?
+  waistCm   Float?
+  hipCm     Float?
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  // Relación con usuario
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  // Índices para optimizar consultas
-  @@index([userId])
-  @@index([fecha])
-  @@index([userId, fecha])
-  @@map("measurements")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+  @@index([userId, createdAt])
 }
 
-model PersonalRecord {
-  id          String @id @default(cuid())
-  userId      String
-  exerciseId  String
-  
-  // Record
-  recordType  String // MAX_WEIGHT, MAX_REPS, BEST_TIME, etc.
-  value       Float  // peso, tiempo, distancia, etc.
-  reps        Int?
-  
-  // Fecha del record
-  achievedAt  DateTime
-  
-  // Relación con ejercicio
-  exercise    Exercise @relation(fields: [exerciseId], references: [id])
-
-  @@unique([userId, exerciseId, recordType])
-  @@map("personal_records")
-}
-
-// =================== NUTRICIÓN ===================
-model NutritionPlan {
-  id          String @id @default(cuid())
-  name        String
-  description String?
-  
-  // Propietario y asignación
-  creatorId   String
-  assignedToId String?
-  
-  // Configuración
-  isTemplate  Boolean @default(false)
-  isActive    Boolean @default(true)
-  
-  // Objetivos nutricionales diarios
-  dailyCalories    Int?
-  dailyProtein     Float?  // gramos
-  dailyCarbs       Float?  // gramos
-  dailyFats        Float?  // gramos
-  dailyFiber       Float?  // gramos
-  
-  // Metadatos
-  tags        String?  // JSON string
-  notes       String?
-  
-  // Timestamps
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  // Relaciones
-  creator     User     @relation("CreatedNutritionPlans", fields: [creatorId], references: [id])
-  assignedTo  User?    @relation("AssignedNutritionPlans", fields: [assignedToId], references: [id])
-  meals       Meal[]
-  
-  @@map("nutrition_plans")
-}
-
-model Meal {
-  id              String @id @default(cuid())
-  nutritionPlanId String
-  
-  // Información básica
-  name            String
-  type            String  // BREAKFAST, LUNCH, DINNER, SNACK
-  order           Int     // orden en el día
-  
-  // Timing
-  suggestedTime   String?  // "08:00", "12:30", etc.
-  
-  // Objetivos de la comida
-  targetCalories  Int?
-  targetProtein   Float?
-  targetCarbs     Float?
-  targetFats      Float?
-  
-  // Notas
-  instructions    String?
-  notes           String?
-  
-  // Timestamps
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  // Relaciones
-  nutritionPlan   NutritionPlan @relation(fields: [nutritionPlanId], references: [id], onDelete: Cascade)
-  foods           MealFood[]
-  
-  @@unique([nutritionPlanId, order])
-  @@map("meals")
-}
-
-model Food {
-  id              String @id @default(cuid())
-  
-  // Información básica
-  name            String
-  brand           String?
-  description     String?
-  
-  // Categorización
-  category        String?  // PROTEIN, CARBS, FATS, VEGETABLES, etc.
-  subcategory     String?
-  
-  // Información nutricional por 100g
-  caloriesPer100g Float
-  proteinPer100g  Float
-  carbsPer100g    Float
-  fatsPer100g     Float
-  fiberPer100g    Float?
-  sugarPer100g    Float?
-  sodiumPer100g   Float?
-  
-  // Unidades de medida comunes
-  commonUnit      String?  // "cup", "piece", "slice", etc.
-  commonUnitGrams Float?   // cuántos gramos equivale la unidad común
-  
-  // Metadatos
-  isVerified      Boolean @default(false)
-  isActive        Boolean @default(true)
-  
-  // Timestamps
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  // Relaciones
-  mealFoods       MealFood[]
-  
-  @@map("foods")
-}
-
-model MealFood {
-  id       String @id @default(cuid())
-  mealId   String
-  foodId   String
-  
-  // Cantidad
-  quantity Float   // cantidad en gramos o unidades
-  unit     String  // "grams", "cups", "pieces", etc.
-  
-  // Valores nutricionales calculados
-  calories Float
-  protein  Float
-  carbs    Float
-  fats     Float
-  fiber    Float?
-  
-  // Notas específicas
-  notes    String?
-  
-  // Relaciones
-  meal     Meal @relation(fields: [mealId], references: [id], onDelete: Cascade)
-  food     Food @relation(fields: [foodId], references: [id])
-  
-  @@map("meal_foods")
-}
-
-model NutritionLog {
-  id       String @id @default(cuid())
-  userId   String
-  
-  // Fecha del registro
-  logDate  DateTime
-  
-  // Comida registrada
-  mealType String   // BREAKFAST, LUNCH, DINNER, SNACK
-  foodName String
-  
-  // Cantidad consumida
-  quantity Float
-  unit     String
-  
-  // Valores nutricionales
-  calories Float
-  protein  Float
-  carbs    Float
-  fats     Float
-  fiber    Float?
-  
-  // Metadatos
-  notes    String?
-  
-  // Timestamps
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  @@map("nutrition_logs")
-}
-
-// =================== RUTINAS ESTRUCTURADAS ===================
-model Routine {
-  id          String @id @default(cuid())
-  name        String
-  description String?
-  
-  // Propietario
-  creatorId   String
-  
-  // Configuración
-  isTemplate  Boolean @default(false)
-  isActive    Boolean @default(true)
-  category    String? // STRENGTH, CARDIO, HIIT, etc.
-  difficulty  String? // BEGINNER, INTERMEDIATE, ADVANCED
-  
-  // Estimaciones
-  estimatedDuration Int? // minutos
-  
-  // Timestamps
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  // Relaciones
-  creator     User @relation("CreatedRoutines", fields: [creatorId], references: [id])
-  blocks      RoutineBlock[]
-  assignments RoutineAssignment[]
-  
-  @@map("routines")
-}
-
-model RoutineBlock {
-  id        String @id @default(cuid())
-  routineId String
-  
-  // Información básica
-  name      String
-  order     Int    // orden en la rutina
-  
-  // Configuración
-  rounds    Int @default(1) // número de rondas del bloque
-  restBetweenRounds Int? // descanso entre rondas en segundos
-  
-  // Notas
-  notes     String?
-  
-  // Timestamps
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  // Relaciones
-  routine   Routine @relation(fields: [routineId], references: [id], onDelete: Cascade)
-  sets      RoutineSet[]
-  
-  @@unique([routineId, order])
-  @@map("routine_blocks")
-}
-
-model RoutineSet {
-  id      String @id @default(cuid())
-  blockId String
-  
-  // Información básica
-  exerciseId String
-  order      Int    // orden en el bloque
-  
-  // Configuración del set
-  reps       Int?
-  weight     Float?
-  duration   Int?    // segundos
-  distance   Float?  // metros
-  restTime   Int?    // descanso después del set en segundos
-  
-  // Notas específicas
-  notes      String?
-  
-  // Timestamps
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  
-  // Relaciones
-  block      RoutineBlock @relation(fields: [blockId], references: [id], onDelete: Cascade)
-  exercise   Exercise @relation(fields: [exerciseId], references: [id])
-  logs       SetLog[]
-  
-  @@unique([blockId, order])
-  @@map("routine_sets")
-}
-
-model RoutineAssignment {
-  id         String @id @default(cuid())
-  routineId  String
-  studentId  String
-  coachId    String
-  
-  // Configuración de la asignación
-  startDate  DateTime
-  endDate    DateTime?
-  frequency  Int @default(3) // veces por semana
-  
-  // Estado
-  isActive   Boolean @default(true)
-  
-  // Notas del coach
-  notes      String?
-  
-  // Timestamps
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  
-  // Relaciones
-  routine    Routine @relation(fields: [routineId], references: [id])
-  student    User @relation("StudentAssignments", fields: [studentId], references: [id])
-  coach      User @relation("CoachAssignments", fields: [coachId], references: [id])
-  
-  @@unique([routineId, studentId])
-  @@map("routine_assignments")
-}
-
-model SetLog {
-  id           String @id @default(cuid())
-  sessionId    String
-  setId        String
-  
-  // Índice del set en la sesión
-  setIndex     Int
-  
-  // Performance real
-  repsCompleted Int?
-  weightUsed    Float?
-  durationActual Int? // segundos
-  distanceActual Float?
-  
-  // Timing
-  startTime     DateTime
-  endTime       DateTime?
-  restTimeActual Int? // descanso real en segundos
-  
-  // Notas
-  notes         String?
-  
-  // Timestamps
-  createdAt     DateTime @default(now())
-  
-  // Relaciones
-  session       WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  set           RoutineSet @relation(fields: [setId], references: [id])
-  
-  @@map("set_logs")
-}
-
-// =================== MÉTRICAS DE PROGRESO ===================
-model ProgressMetric {
-  id        String @id @default(cuid())
+model Streak {
+  id        String   @id @default(cuid())
   userId    String
-  
-  // Fecha de la medición
-  date      DateTime
-  
-  // Métricas corporales
-  weight    Float?
-  bodyFat   Float? // porcentaje
-  muscle    Float? // porcentaje o kg
-  
-  // Medidas corporales (cm)
-  chest     Float?
-  waist     Float?
-  hips      Float?
-  bicep     Float?
-  thigh     Float?
-  
-  // Notas
-  notes     String?
-  
-  // Timestamps
+  startDate DateTime
+  endDate   DateTime?
+  days      Int
   createdAt DateTime @default(now())
-  
-  // Relaciones
-  user      User @relation(fields: [userId], references: [id])
-  
-  @@map("progress_metrics")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, startDate])
 }
 
-// =================== VÍNCULOS COACH-ALUMNO ===================
-model CoachStudentLink {
-  id        String @id @default(cuid())
-  coachId   String
-  studentId String
-  
-  // Estado del vínculo
-  status    String @default("ACTIVE") // ACTIVE, INACTIVE, PENDING
-  
-  // Configuración
-  startDate DateTime @default(now())
-  endDate   DateTime?
-  
-  // Notas
-  notes     String?
-  
-  // Timestamps
+model Subscription {
+  id               String   @id @default(cuid())
+  userId           String
+  provider         String
+  status           String
+  currentPeriodEnd DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model DemoAccount {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  expiresAt   DateTime
+  convertedAt DateTime?
+  seedVersion String
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AdherenceMetric {
+  id        String   @id @default(cuid())
+  planId    String
+  workoutId String
+  adherence Float
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  // Relaciones
-  coach     User @relation("CoachLinks", fields: [coachId], references: [id])
-  student   User @relation("StudentLinks", fields: [studentId], references: [id])
-  
-  @@unique([coachId, studentId])
-  @@map("coach_student_links")
+
+  plan    Plan    @relation(fields: [planId], references: [id], onDelete: Cascade)
+  workout Workout @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+
+  @@index([planId, createdAt])
+}
+
+model ProgressPhoto {
+  id        String   @id @default(cuid())
+  userId    String
+  date      DateTime @default(now())
+  frontUrl  String?
+  sideUrl   String?
+  backUrl   String?
+  note      String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
 }

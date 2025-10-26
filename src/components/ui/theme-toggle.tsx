@@ -1,34 +1,34 @@
-'use client'
+'use client';
 
-import { useTheme } from 'next-themes'
-import { useEffect, useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Moon, Sun } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { useTheme } from 'next-themes';
+import { useEffect, useState } from 'react';
+import { MoonStar, Sun } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
-export function ThemeToggle({ className }: { className?: string }) {
-  const { theme, setTheme } = useTheme()
-  const [mounted, setMounted] = useState(false)
+export function ThemeToggle() {
+  const { setTheme, theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
 
-  // Evitar hidratación incorrecta
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  useEffect(() => setMounted(true), []);
 
   if (!mounted) {
-    return null
+    return (
+      <Button variant="ghost" size="icon" aria-label="Cambiar tema">
+        <Sun className="h-4 w-4" />
+      </Button>
+    );
   }
+
+  const isDark = theme === 'dark';
 
   return (
     <Button
       variant="ghost"
       size="icon"
-      className={cn('rounded-full', className)}
-      onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-      aria-label={`Cambiar a modo ${theme === 'dark' ? 'claro' : 'oscuro'}`}
+      aria-label="Cambiar tema"
+      onClick={() => setTheme(isDark ? 'light' : 'dark')}
     >
-      <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-      <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+      {isDark ? <Sun className="h-5 w-5" /> : <MoonStar className="h-5 w-5" />}
     </Button>
-  )
+  );
 }

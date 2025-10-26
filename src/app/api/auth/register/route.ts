@@ -1,120 +1,74 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { hash } from 'bcryptjs'
-import { prisma } from '@/lib/db'
-import { withSecurity, createRequestValidator } from '@/middleware/security-middleware'
-import { createUserSchema, type CreateUserInput } from '@/lib/validations'
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/clients/prisma';
+import { hashPassword } from '@/lib/auth/password';
+import { z } from 'zod';
 
-async function registerHandler(req: NextRequest) {
+const registerSchema = z.object({
+  email: z.string().email('Email inválido'),
+  password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres'),
+  name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres').optional()
+});
+
+export async function POST(req: NextRequest) {
   try {
-    const body = await req.json()
-    
-    // Advanced validation with security checks
-    const validator = createRequestValidator()
-    const validationResult = validator.validateJSON(body, createUserSchema)
-    
-    if (!validationResult.success) {
-      return NextResponse.json(
-        { message: validationResult.error },
-        { status: 400 }
-      )
-    }
-    
-    const { name, email, password, role } = validationResult.data as CreateUserInput
+    const body = await req.json();
+    const validatedData = registerSchema.parse(body);
 
     // Verificar si el usuario ya existe
     const existingUser = await prisma.user.findUnique({
-      where: { email },
-    })
+      where: { email: validatedData.email }
+    });
 
     if (existingUser) {
       return NextResponse.json(
-        { message: 'Ya existe una cuenta con este email' },
+        { error: 'El email ya está registrado' },
         { status: 400 }
-      )
+      );
     }
 
     // Hash de la contraseña
-    const hashedPassword = await hash(password, 12)
+    const passwordHash = await hashPassword(validatedData.password);
 
-    // Crear usuario
+    // Crear usuario con perfil inicial
     const user = await prisma.user.create({
       data: {
-        name,
-        email,
-        password: hashedPassword,
-        role: role.toUpperCase(),
-        isVerified: true, // En producción, enviar email de verificación
+        email: validatedData.email,
+        name: validatedData.name || validatedData.email.split('@')[0],
+        passwordHash,
+        profile: {
+          create: {
+            progressionRule: 'VOLUME'
+          }
+        }
       },
-    })
-
-    // Crear perfil según el rol
-    if (role.toUpperCase() === 'CLIENT') {
-      await prisma.clientProfile.create({
-        data: {
-          userId: user.id,
-        },
-      })
-    } else if (role.toUpperCase() === 'TRAINER') {
-      await prisma.trainerProfile.create({
-        data: {
-          userId: user.id,
-          isActive: true,
-          maxClients: 50,
-        },
-      })
-    }
-
-    // Crear suscripción gratuita por defecto
-    await prisma.subscription.create({
-      data: {
-        userId: user.id,
-        planType: 'FREE',
-        status: 'ACTIVE',
-        currentPeriodStart: new Date(),
-        currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 año gratis
-      },
-    })
-
-    // No devolver la contraseña
-    const { password: _, ...userWithoutPassword } = user
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        createdAt: true
+      }
+    });
 
     return NextResponse.json(
-      { 
+      {
+        success: true,
         message: 'Usuario creado exitosamente',
-        user: userWithoutPassword 
+        user
       },
       { status: 201 }
-    )
-
+    );
   } catch (error) {
-    console.error('Registration error:', error)
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: 'Datos inválidos', details: error.errors },
+        { status: 400 }
+      );
+    }
+
+    console.error('Error en registro:', error);
     return NextResponse.json(
-      { message: 'Error interno del servidor' },
+      { error: 'Error al crear usuario' },
       { status: 500 }
-    )
+    );
   }
 }
-
-// Export the secured handler
-export const POST = withSecurity(registerHandler, {
-  authentication: {
-    required: false // Registration doesn't require authentication
-  },
-  rateLimiting: {
-    enabled: true,
-    requests: 5,
-    window: 15 * 60 * 1000 // 15 minutes
-  },
-  csrf: {
-    enabled: false, // Disabled for tests
-    methods: ['POST']
-  },
-  validation: {
-    enabled: true,
-    maxBodySize: 1024 // 1KB for registration
-  },
-  logging: {
-    enabled: true,
-    logLevel: 'HIGH'
-  }
-})

@@ -1,0 +1,206 @@
+###
+# Ejemplos de API - Kairos Fitness
+# Puedes usar estos ejemplos con REST Client (VS Code) o curl
+###
+
+@baseUrl = http://localhost:3000
+@contentType = application/json
+
+###############################################
+# 1. REGISTRO DE USUARIO
+###############################################
+
+### Registrar nuevo usuario
+POST {{baseUrl}}/api/auth/register
+Content-Type: {{contentType}}
+
+{
+  "email": "test@example.com",
+  "password": "SecurePass123!",
+  "name": "Test User"
+}
+
+### Registrar usuario sin nombre (usará email)
+POST {{baseUrl}}/api/auth/register
+Content-Type: {{contentType}}
+
+{
+  "email": "another@example.com",
+  "password": "Password123!"
+}
+
+### Error: Email ya existe
+POST {{baseUrl}}/api/auth/register
+Content-Type: {{contentType}}
+
+{
+  "email": "demo@kairos.fit",
+  "password": "DemoPass123!"
+}
+
+### Error: Contraseña muy corta
+POST {{baseUrl}}/api/auth/register
+Content-Type: {{contentType}}
+
+{
+  "email": "short@example.com",
+  "password": "123"
+}
+
+### Error: Email inválido
+POST {{baseUrl}}/api/auth/register
+Content-Type: {{contentType}}
+
+{
+  "email": "not-an-email",
+  "password": "Password123!"
+}
+
+
+###############################################
+# 2. AUTENTICACIÓN (NextAuth)
+###############################################
+
+### Login con Credentials (Usar desde frontend)
+# POST {{baseUrl}}/api/auth/signin/credentials
+#
+# Desde React/Next.js:
+# import { signIn } from 'next-auth/react';
+#
+# const result = await signIn('credentials', {
+#   email: 'demo@kairos.fit',
+#   password: 'DemoPass123!',
+#   redirect: false
+# });
+
+
+### Get Session (Verificar autenticación)
+GET {{baseUrl}}/api/auth/session
+
+
+### Logout (Usar desde frontend)
+# POST {{baseUrl}}/api/auth/signout
+#
+# Desde React/Next.js:
+# import { signOut } from 'next-auth/react';
+# await signOut({ callbackUrl: '/login' });
+
+
+###############################################
+# 3. MÉTRICAS DE USUARIO (Requiere Auth)
+###############################################
+
+### Obtener todas las métricas del usuario autenticado
+GET {{baseUrl}}/api/metrics
+Cookie: next-auth.session-token=YOUR_SESSION_TOKEN_HERE
+
+
+### Obtener métricas con paginación
+GET {{baseUrl}}/api/metrics?limit=10&offset=0
+Cookie: next-auth.session-token=YOUR_SESSION_TOKEN_HERE
+
+
+### Crear nueva métrica - Completa
+POST {{baseUrl}}/api/metrics
+Content-Type: {{contentType}}
+Cookie: next-auth.session-token=YOUR_SESSION_TOKEN_HERE
+
+{
+  "weightKg": 75.5,
+  "bodyFat": 15.2,
+  "neckCm": 38.0,
+  "waistCm": 82.0,
+  "hipCm": 95.0
+}
+
+
+### Crear métrica - Solo peso
+POST {{baseUrl}}/api/metrics
+Content-Type: {{contentType}}
+Cookie: next-auth.session-token=YOUR_SESSION_TOKEN_HERE
+
+{
+  "weightKg": 76.0
+}
+
+
+### Crear métrica - Con fecha específica
+POST {{baseUrl}}/api/metrics
+Content-Type: {{contentType}}
+Cookie: next-auth.session-token=YOUR_SESSION_TOKEN_HERE
+
+{
+  "date": "2025-10-20T10:00:00.000Z",
+  "weightKg": 75.0,
+  "bodyFat": 15.5
+}
+
+
+### Error: No autenticado
+POST {{baseUrl}}/api/metrics
+Content-Type: {{contentType}}
+
+{
+  "weightKg": 75.5
+}
+
+
+### Error: Sin métricas
+POST {{baseUrl}}/api/metrics
+Content-Type: {{contentType}}
+Cookie: next-auth.session-token=YOUR_SESSION_TOKEN_HERE
+
+{
+  "notes": "No hay métricas"
+}
+
+
+###############################################
+# 4. VERIFICACIÓN DE SALUD DEL SISTEMA
+###############################################
+
+### Health check (si existe endpoint)
+GET {{baseUrl}}/api/health
+
+
+###############################################
+# NOTAS DE USO
+###############################################
+
+# Para usar estos endpoints:
+#
+# 1. Inicia el servidor: pnpm dev
+#
+# 2. Registra un usuario con POST /api/auth/register
+#
+# 3. Inicia sesión desde el frontend:
+#    - Ve a http://localhost:3000/login
+#    - Usa las credenciales del paso 2 o demo@kairos.fit
+#
+# 4. Obtén el session token desde las cookies del navegador:
+#    - Abre DevTools > Application > Cookies
+#    - Copia el valor de 'next-auth.session-token'
+#
+# 5. Reemplaza YOUR_SESSION_TOKEN_HERE con tu token
+#
+# 6. Ejecuta los requests protegidos (métricas)
+#
+
+###############################################
+# ALTERNATIVA: Usar CURL
+###############################################
+
+# Registrar usuario
+# curl -X POST http://localhost:3000/api/auth/register \
+#   -H "Content-Type: application/json" \
+#   -d '{"email":"test@example.com","password":"Pass123!","name":"Test"}'
+
+# Crear métrica (requiere cookie de sesión)
+# curl -X POST http://localhost:3000/api/metrics \
+#   -H "Content-Type: application/json" \
+#   -H "Cookie: next-auth.session-token=YOUR_TOKEN" \
+#   -d '{"weightKg":75.5,"bodyFat":15.2}'
+
+# Obtener métricas
+# curl http://localhost:3000/api/metrics \
+#   -H "Cookie: next-auth.session-token=YOUR_TOKEN"

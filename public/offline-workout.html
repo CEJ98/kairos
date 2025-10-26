@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kairos • Sesión sin conexión</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: radial-gradient(circle at 0% 0%, rgba(19, 196, 163, 0.18), transparent 55%), #0e1726;
+        color: #f5f5f5;
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+      }
+      header {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      .timer {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.75rem;
+        background: rgba(19, 196, 163, 0.15);
+        border-radius: 999px;
+        padding: 0.5rem 1.25rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+      }
+      .timer button {
+        appearance: none;
+        border: none;
+        border-radius: 999px;
+        padding: 0.35rem 1.25rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        background: #13c4a3;
+        color: #0a2e24;
+        cursor: pointer;
+      }
+      .card {
+        background: rgba(8, 14, 26, 0.78);
+        border-radius: 1.5rem;
+        padding: 1.5rem;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+      }
+      .exercise {
+        margin-bottom: 1.5rem;
+      }
+      .exercise:last-child {
+        margin-bottom: 0;
+      }
+      .exercise h3 {
+        margin: 0 0 0.25rem;
+        font-size: 1.1rem;
+      }
+      .sets {
+        display: grid;
+        gap: 1rem;
+      }
+      .set {
+        display: grid;
+        gap: 0.75rem;
+        background: rgba(17, 28, 46, 0.7);
+        border-radius: 1rem;
+        padding: 1rem;
+      }
+      .set-fields {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+        gap: 0.75rem;
+      }
+      label {
+        display: flex;
+        flex-direction: column;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: rgba(229, 231, 235, 0.7);
+      }
+      input, textarea {
+        margin-top: 0.45rem;
+        border-radius: 0.85rem;
+        border: 1px solid rgba(79, 209, 197, 0.35);
+        background: rgba(6, 18, 32, 0.8);
+        color: #f5f5f5;
+        font-size: 0.95rem;
+        padding: 0.55rem 0.75rem;
+      }
+      textarea {
+        resize: vertical;
+        min-height: 3.25rem;
+      }
+      .status {
+        font-size: 0.85rem;
+        opacity: 0.8;
+      }
+      .status strong {
+        color: #4fd1c5;
+      }
+      .sync-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        background: rgba(79, 209, 197, 0.12);
+        border-radius: 999px;
+        padding: 0.35rem 0.9rem;
+        font-size: 0.78rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+      .hidden {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <span class="sync-indicator" id="syncState">Modo offline</span>
+      <h1 id="workoutTitle">Cargando sesión...</h1>
+      <p id="workoutDescription"></p>
+      <div class="timer">
+        <span id="timerDisplay">00:00</span>
+        <button type="button" id="timerToggle">Iniciar</button>
+        <button type="button" id="timerReset">Reiniciar</button>
+      </div>
+      <p class="status" id="statusText"></p>
+    </header>
+    <main class="card" id="workoutContent">
+      <p>Cargando contenido offline...</p>
+    </main>
+    <script>
+      (function () {
+        const pathParts = window.location.pathname.split('/').filter(Boolean);
+        const workoutId = pathParts[pathParts.length - 1] || 'unknown';
+        const metaKey = `kairos:workout:${workoutId}:meta`;
+        const draftKey = `kairos:workout:${workoutId}:draft`;
+        const cacheKey = `kairos:workout:${workoutId}:cache`;
+        const timerKey = `kairos:workout:${workoutId}:timer`;
+        const statusText = document.getElementById('statusText');
+        const syncState = document.getElementById('syncState');
+        const timerDisplay = document.getElementById('timerDisplay');
+        const toggleButton = document.getElementById('timerToggle');
+        const resetButton = document.getElementById('timerReset');
+        const workoutTitle = document.getElementById('workoutTitle');
+        const workoutDescription = document.getElementById('workoutDescription');
+        const workoutContent = document.getElementById('workoutContent');
+
+        const meta = safeJSON(localStorage.getItem(metaKey));
+        if (!meta) {
+          workoutContent.innerHTML = '<p>No pudimos recuperar esta sesión en modo offline. Vuelve a intentarlo cuando tengas conexión.</p>';
+          return;
+        }
+
+        workoutTitle.textContent = meta.title;
+        workoutDescription.textContent = meta.description || 'Tus datos quedan guardados localmente hasta sincronizar.';
+
+        const rawDraft = safeJSON(localStorage.getItem(draftKey));
+        const cachedDraft = safeJSON(localStorage.getItem(cacheKey));
+        const defaultSets = meta.exercises.flatMap((exercise) =>
+          Array.from({ length: exercise.targetSets }).map(() => ({
+            exerciseId: exercise.exerciseId,
+            weight: 0,
+            reps: exercise.targetReps,
+            rpe: exercise.rpeTarget ?? null,
+            rir: exercise.rpeTarget ? Math.max(0, 10 - exercise.rpeTarget) : null,
+            restSeconds: exercise.restSeconds,
+            notes: ''
+          }))
+        );
+
+        const sourceSets =
+          (rawDraft && Array.isArray(rawDraft.sets) && rawDraft.sets) ||
+          (cachedDraft && Array.isArray(cachedDraft.sets) && cachedDraft.sets) ||
+          defaultSets;
+
+        const draftState = {
+          sets: defaultSets.map((set, index) => ({
+            ...set,
+            ...sourceSets[index],
+            notes: sourceSets[index]?.notes ?? set.notes
+          }))
+        };
+        const totalSets = draftState.sets.length;
+        let pendingSync = Boolean(rawDraft && rawDraft.pending);
+
+        const timerState = safeJSON(localStorage.getItem(timerKey)) || {
+          running: false,
+          startedAt: null,
+          elapsedSeconds: 0
+        };
+
+        let timerInterval = null;
+
+        function safeJSON(value) {
+          if (!value) return null;
+          try {
+            return JSON.parse(value);
+          } catch (error) {
+            console.error('JSON inválido en localStorage', error);
+            return null;
+          }
+        }
+
+        function pad(value) {
+          return value.toString().padStart(2, '0');
+        }
+
+        function formatSeconds(seconds) {
+          const mins = Math.floor(seconds / 60);
+          const secs = seconds % 60;
+          return `${pad(mins)}:${pad(secs)}`;
+        }
+
+        function persistDraft() {
+          localStorage.setItem(cacheKey, JSON.stringify({ sets: draftState.sets }));
+          localStorage.setItem(draftKey, JSON.stringify({ sets: draftState.sets, pending: true }));
+          pendingSync = true;
+          statusText.innerHTML =
+            '<strong>Progreso guardado offline.</strong> Se sincronizará al volver a conectar.';
+          syncState.textContent = 'Pendiente de sincronizar';
+        }
+
+        function renderExercises() {
+          const fragment = document.createDocumentFragment();
+          let globalIndex = 0;
+
+          meta.exercises.forEach((exercise) => {
+            const wrapper = document.createElement('section');
+            wrapper.className = 'exercise';
+            const title = document.createElement('h3');
+            title.textContent = exercise.name;
+            wrapper.appendChild(title);
+            const metaLine = document.createElement('p');
+            metaLine.style.opacity = '0.7';
+            metaLine.style.fontSize = '0.85rem';
+            metaLine.textContent = `Objetivo: ${exercise.targetSets} x ${exercise.targetReps} reps · Descanso ${exercise.restSeconds}s`;
+            wrapper.appendChild(metaLine);
+
+            const setsWrapper = document.createElement('div');
+            setsWrapper.className = 'sets';
+
+            Array.from({ length: exercise.targetSets }).forEach((_, setIndex) => {
+              const setCard = document.createElement('article');
+              setCard.className = 'set';
+              const badge = document.createElement('span');
+              badge.textContent = `Set ${setIndex + 1}`;
+              badge.style.fontSize = '0.8rem';
+              badge.style.letterSpacing = '0.08em';
+              badge.style.opacity = '0.75';
+              setCard.appendChild(badge);
+
+              const fields = document.createElement('div');
+              fields.className = 'set-fields';
+
+              const fieldConfigs = [
+                { key: 'weight', label: 'Peso (kg)', type: 'number', step: '0.5', min: '0' },
+                { key: 'reps', label: 'Reps', type: 'number', step: '1', min: '1', max: '30' },
+                { key: 'rpe', label: 'RPE', type: 'number', step: '0.5', min: '5', max: '10' },
+                { key: 'rir', label: 'RIR', type: 'number', step: '0.5', min: '0', max: '5' }
+              ];
+
+              const currentSet = draftState.sets[globalIndex];
+
+              fieldConfigs.forEach((config) => {
+                const label = document.createElement('label');
+                label.textContent = config.label;
+                const input = document.createElement('input');
+                input.type = config.type;
+                if (config.step) input.step = config.step;
+                if (config.min) input.min = config.min;
+                if (config.max) input.max = config.max;
+                input.value = currentSet[config.key] ?? '';
+                input.dataset.index = String(globalIndex);
+                input.dataset.key = config.key;
+                input.addEventListener('change', (event) => {
+                  const target = event.target;
+                  if (!(target instanceof HTMLInputElement)) return;
+                  const idx = Number(target.dataset.index);
+                  const key = target.dataset.key;
+                  const value = target.value === '' ? null : Number(target.value);
+                  draftState.sets[idx][key] = Number.isFinite(value) ? value : null;
+                  if (key === 'weight' || key === 'reps') {
+                    draftState.sets[idx][key] = Number(target.value || 0);
+                  }
+                  persistDraft();
+                });
+                label.appendChild(input);
+                fields.appendChild(label);
+              });
+
+              const notesLabel = document.createElement('label');
+              notesLabel.textContent = 'Notas';
+              const notes = document.createElement('textarea');
+              notes.value = currentSet.notes || '';
+              notes.dataset.index = String(globalIndex);
+              notes.addEventListener('input', (event) => {
+                const target = event.target;
+                if (!(target instanceof HTMLTextAreaElement)) return;
+                const idx = Number(target.dataset.index);
+                draftState.sets[idx].notes = target.value;
+                persistDraft();
+              });
+              notesLabel.appendChild(notes);
+
+              setCard.appendChild(fields);
+              setCard.appendChild(notesLabel);
+              setsWrapper.appendChild(setCard);
+
+              globalIndex += 1;
+            });
+
+            wrapper.appendChild(setsWrapper);
+            fragment.appendChild(wrapper);
+          });
+
+          workoutContent.innerHTML = '';
+          workoutContent.appendChild(fragment);
+        }
+
+        function persistTimer() {
+          localStorage.setItem(
+            timerKey,
+            JSON.stringify({
+              running: timerState.running,
+              startedAt: timerState.startedAt,
+              elapsedSeconds: timerState.elapsedSeconds
+            })
+          );
+        }
+
+        function updateTimerDisplay() {
+          let elapsed = timerState.elapsedSeconds;
+          if (timerState.running && timerState.startedAt) {
+            const diff = Math.floor((Date.now() - timerState.startedAt) / 1000);
+            elapsed = diff;
+            timerState.elapsedSeconds = elapsed;
+          }
+          timerDisplay.textContent = formatSeconds(elapsed);
+          persistTimer();
+        }
+
+        function startTimer() {
+          if (timerState.running) return;
+          timerState.running = true;
+          timerState.startedAt = Date.now() - timerState.elapsedSeconds * 1000;
+          persistTimer();
+          timerInterval = window.setInterval(updateTimerDisplay, 1000);
+          toggleButton.textContent = 'Pausar';
+        }
+
+        function pauseTimer() {
+          if (!timerState.running) return;
+          timerState.running = false;
+          timerState.elapsedSeconds = Math.floor((Date.now() - timerState.startedAt) / 1000);
+          timerState.startedAt = null;
+          persistTimer();
+          if (timerInterval) window.clearInterval(timerInterval);
+          timerInterval = null;
+          toggleButton.textContent = 'Reanudar';
+          updateTimerDisplay();
+        }
+
+        function resetTimer() {
+          timerState.running = false;
+          timerState.elapsedSeconds = 0;
+          timerState.startedAt = null;
+          persistTimer();
+          if (timerInterval) window.clearInterval(timerInterval);
+          timerInterval = null;
+          toggleButton.textContent = 'Iniciar';
+          updateTimerDisplay();
+        }
+
+        function handleToggle() {
+          if (timerState.running) {
+            pauseTimer();
+          } else {
+            startTimer();
+          }
+        }
+
+        async function syncIfPossible() {
+          if (!pendingSync) return;
+          if (!navigator.onLine) {
+            statusText.textContent = 'Seguimos sin conexión. Guardamos tu progreso localmente.';
+            syncState.textContent = 'Sin conexión';
+            return;
+          }
+
+          statusText.textContent = 'Sincronizando progreso...';
+          syncState.textContent = 'Sincronizando';
+
+          try {
+            const response = await fetch('/api/workouts/offline-sync', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                workoutId,
+                planId: meta.planId,
+                elapsedSeconds: timerState.elapsedSeconds,
+                sets: draftState.sets,
+                updatedAt: Date.now()
+              })
+            });
+
+            if (!response.ok) {
+              throw new Error('Sync error');
+            }
+
+            localStorage.setItem(cacheKey, JSON.stringify({ sets: draftState.sets }));
+            localStorage.removeItem(draftKey);
+            pendingSync = false;
+            statusText.innerHTML = '<strong>Progreso sincronizado.</strong> Puedes recargar la sesión completa.';
+            syncState.textContent = 'Sincronizado';
+          } catch (error) {
+            statusText.textContent = 'No pudimos sincronizar todavía. Reintentaremos automáticamente.';
+            syncState.textContent = 'Reintentando';
+            setTimeout(syncIfPossible, 5000);
+          }
+        }
+
+        renderExercises();
+        updateTimerDisplay();
+        if (timerState.running) {
+          timerInterval = window.setInterval(updateTimerDisplay, 1000);
+          toggleButton.textContent = 'Pausar';
+        }
+
+        toggleButton.addEventListener('click', handleToggle);
+        resetButton.addEventListener('click', resetTimer);
+        window.addEventListener('online', syncIfPossible);
+        window.addEventListener('focus', syncIfPossible);
+
+        if (navigator.onLine) {
+          syncIfPossible();
+        } else {
+          statusText.textContent = 'Sin conexión. Guarda tus datos y se sincronizarán automáticamente.';
+        }
+      })();
+    </script>
+  </body>
+</html>

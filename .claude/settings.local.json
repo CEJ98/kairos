@@ -1,37 +1,18 @@
 {
   "permissions": {
     "allow": [
-      "Bash(claude doctor)",
-      "Bash(npm install)",
-      "Bash(npm run:*)",
-      "Bash(DATABASE_URL=\"file:./dev.db\" npm run db:push)",
-      "Bash(DATABASE_URL=\"file:./dev.db\" npm run db:seed)",
-      "Bash(npm install:*)",
-      "Bash(openssl rand:*)",
-      "WebFetch(domain:dribbble.com)",
-      "Bash(unzip:*)",
-      "Bash(DATABASE_URL=\"postgresql://postgres.qvancwgkkjciutreqenq:KaixClaude2024@aws-0-us-west-1.pooler.supabase.com:6543/postgres\" npm run db:push)",
-      "Bash(DATABASE_URL=\"postgresql://postgres:[YOUR-PASSWORD]@db.qvancwgkkjciutreqenq.supabase.co:5432/postgres\" npm run db:push)",
-      "Bash(DATABASE_URL=\"postgresql://postgres:rugby123@db.qvancwgkkjciutreqenq.supabase.co:5432/postgres\" npm run db:push)",
-      "Bash(DATABASE_URL=\"postgresql://postgres:rugby123@db.qvancwgkkjciutreqenq.supabase.co:5432/postgres\" npm run db:seed)",
-      "Bash(cp:*)",
-      "Bash(sudo npm install -g @anthropic-ai/claude-code@latest)",
-      "Bash(npm uninstall:*)",
-      "Bash(npm cache clean:*)",
-      "Bash(sudo npm cache clean --force)",
-      "Bash(npm outdated)",
-      "Bash(npm update:*)",
-      "Bash(npm audit:*)",
-      "Bash(node:*)",
-      "Bash(npm test:*)",
       "Bash(chmod:*)",
-      "Bash(npx prisma generate:*)",
-      "Bash(npx prisma:*)",
-      "Bash(npx web-push:*)",
-      "Bash(grep:*)",
-      "Bash(sed:*)",
-      "Bash(npx tsc:*)"
+      "Bash(pnpm install:*)",
+      "Bash(pnpm db:generate:*)",
+      "Bash(pnpm db:push:*)",
+      "Bash(pnpm dev:*)",
+      "Bash(pnpm add:*)",
+      "Bash(pkill:*)",
+      "Bash(bash scripts/check-requirements.sh:*)",
+      "Bash(timeout 15 bash scripts/dev.sh:*)",
+      "Bash(timeout 15 pnpm dev:*)"
     ],
-    "deny": []
+    "deny": [],
+    "ask": []
   }
 }
