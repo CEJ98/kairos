@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logging";
+
 'use server';
 
 import { getServerSession } from 'next-auth';
@@ -193,7 +195,7 @@ export async function rescheduleWorkout(
     revalidatePath('/calendar');
     return { success: true };
   } catch (error) {
-    console.error('Error rescheduling workout:', error);
+    logger.error('Error rescheduling workout:', error);
     return { success: false, error: 'Error al reprogramar el entrenamiento' };
   }
 }
@@ -239,7 +241,7 @@ export async function markWorkoutComplete(
     revalidatePath('/calendar');
     return { success: true };
   } catch (error) {
-    console.error('Error marking workout complete:', error);
+    logger.error('Error marking workout complete:', error);
     return { success: false, error: 'Error al marcar el entrenamiento como completado' };
   }
 }

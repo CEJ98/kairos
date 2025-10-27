@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logging";
+
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/clients/prisma';
 import { hashPassword } from '@/lib/auth/password';
@@ -65,7 +67,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.error('Error en registro:', error);
+    logger.error('Error en registro:', error);
     return NextResponse.json(
       { error: 'Error al crear usuario' },
       { status: 500 }

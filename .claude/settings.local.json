@@ -10,7 +10,13 @@
       "Bash(pkill:*)",
       "Bash(bash scripts/check-requirements.sh:*)",
       "Bash(timeout 15 bash scripts/dev.sh:*)",
-      "Bash(timeout 15 pnpm dev:*)"
+      "Bash(timeout 15 pnpm dev:*)",
+      "Bash(pnpm build:*)",
+      "Bash(pnpm next build:*)",
+      "Bash(pnpm dlx:*)",
+      "Bash(SKIP_ENV_VALIDATION=true NEXT_PUBLIC_IGNORE_ESLINT=true pnpm next build:*)",
+      "Bash(./scripts/replace-console-logs.sh:*)",
+      "Bash(pnpm prisma format:*)"
     ],
     "deny": [],
     "ask": []

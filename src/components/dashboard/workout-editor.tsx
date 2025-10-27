@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logging";
+
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
@@ -11,6 +13,7 @@ import { useTrack } from '@/lib/hooks/use-track';
 import { saveWorkoutSession } from '@/app/actions/workout-actions';
 import { CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import type { WorkoutSet as PrismaWorkoutSet } from '@prisma/client';
 
 interface WorkoutEditorProps {
   planId: string;
@@ -45,6 +48,17 @@ type EditableSet = {
   restSeconds: number;
   completed: boolean;
   notes?: string;
+};
+
+// Frontend representation of a workout set, based on Prisma schema
+// Extends the core fields with UI-only properties used in the editor
+type WorkoutSet = Pick<
+  PrismaWorkoutSet,
+  'exerciseId' | 'weight' | 'reps' | 'rpe' | 'rir' | 'restSeconds' | 'notes'
+> & {
+  id?: string;
+  setNumber?: number;
+  completed: boolean;
 };
 
 export function WorkoutEditor({ planId, workout }: WorkoutEditorProps) {
@@ -135,7 +149,7 @@ export function WorkoutEditor({ planId, workout }: WorkoutEditorProps) {
         return prev.map((current, index) => mergeStoredSet(sourceSets[index], current));
       });
     } catch (error) {
-      console.error('No se pudo restaurar el draft offline', error);
+      logger.error('No se pudo restaurar el draft offline', error);
     }
   }, [offlineCacheKey, offlineDraftKey]);
 
@@ -180,7 +194,7 @@ export function WorkoutEditor({ planId, workout }: WorkoutEditorProps) {
       await autosaveWorkoutDraft({
         planId,
         workoutId: workout.id,
-        sets: parsed.sets.map((set: any) => ({
+        sets: parsed.sets.map((set: WorkoutSet) => ({
           exerciseId: set.exerciseId,
           weight: Number(set.weight) || 0,
           reps: Number(set.reps) || 0,
@@ -200,7 +214,7 @@ export function WorkoutEditor({ planId, workout }: WorkoutEditorProps) {
       setHasPendingOfflineSync(false);
       offlineNoticeShownRef.current = false;
     } catch (error) {
-      console.error('No se pudo sincronizar el progreso offline', error);
+      logger.error('No se pudo sincronizar el progreso offline', error);
       setHasPendingOfflineSync(true);
     }
   }, [offlineDraftKey, planId, track, workout.id]);
@@ -246,7 +260,7 @@ export function WorkoutEditor({ planId, workout }: WorkoutEditorProps) {
           setHasPendingOfflineSync(false);
           offlineNoticeShownRef.current = false;
         } catch (error) {
-          console.error('Error al autoguardar, guardando offline', error);
+          logger.error('Error al autoguardar, guardando offline', error);
           window.localStorage.setItem(
             offlineDraftKey,
             JSON.stringify({ sets: offlineSnapshot, pending: true })
@@ -639,10 +653,10 @@ function groupSetsByExerciseForRedis(
     setNumber: number;
     weight: number;
     reps: number;
-    rpe?: number;
-    rir?: number;
+    rpe?: number | null;
+    rir?: number | null;
     completed: boolean;
-    notes?: string;
+    notes?: string | null;
   }[];
 }[] {
   const grouped: Record<string, {
@@ -650,7 +664,17 @@ function groupSetsByExerciseForRedis(
     name: string;
     muscleGroup: string;
     equipment: string;
-    sets: any[];
+    sets: {
+      id: string;
+      exerciseId: string;
+      setNumber: number;
+      weight: number;
+      reps: number;
+      rpe?: number | null;
+      rir?: number | null;
+      completed: boolean;
+      notes?: string | null;
+    }[];
   }> = {};
 
   workout.exercises.forEach((ex) => {
@@ -674,10 +698,10 @@ function groupSetsByExerciseForRedis(
       setNumber,
       weight: Number(s.weight) || 0,
       reps: Number(s.reps) || 0,
-      rpe: typeof s.rpe === 'number' ? s.rpe : undefined,
-      rir: typeof s.rir === 'number' ? s.rir : undefined,
+      rpe: typeof s.rpe === 'number' ? s.rpe : null,
+      rir: typeof s.rir === 'number' ? s.rir : null,
       completed: Boolean(s.completed),
-      notes: s.notes && s.notes.trim().length > 0 ? s.notes : undefined
+      notes: s.notes && s.notes.trim().length > 0 ? s.notes : null
     });
   });
 

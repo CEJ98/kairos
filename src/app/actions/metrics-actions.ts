@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logging";
+
 'use server';
 
 import { getServerSession } from 'next-auth';
@@ -108,7 +110,7 @@ export async function saveBodyWeight(
       },
     };
   } catch (error) {
-    console.error('Error saving body weight:', error);
+    logger.error('Error saving body weight:', error);
     if (error instanceof z.ZodError) {
       return { success: false, error: 'Datos inválidos' };
     }
@@ -166,7 +168,7 @@ export async function saveBodyMeasurements(
       },
     };
   } catch (error) {
-    console.error('Error saving body measurements:', error);
+    logger.error('Error saving body measurements:', error);
     if (error instanceof z.ZodError) {
       return { success: false, error: 'Datos inválidos' };
     }
@@ -371,7 +373,7 @@ export async function saveProgressPhoto(
       },
     };
   } catch (error) {
-    console.error('Error saving progress photo:', error);
+    logger.error('Error saving progress photo:', error);
     return { success: false, error: 'Error al guardar la foto' };
   }
 }
@@ -411,7 +413,7 @@ export async function deleteProgressPhoto(
     revalidatePath('/metrics');
     return { success: true };
   } catch (error) {
-    console.error('Error deleting progress photo:', error);
+    logger.error('Error deleting progress photo:', error);
     return { success: false, error: 'Error al eliminar la foto' };
   }
 }

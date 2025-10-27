@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logging";
+
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/clients/prisma';
 import * as Sentry from '@sentry/nextjs';
@@ -70,7 +72,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: true, bucket, pathPrefix: basePath, tables: tables.map((t) => t.name) });
   } catch (err) {
     Sentry.captureException(err);
-    console.error('daily-backup-error', err);
+    logger.error('daily-backup-error', err);
     return NextResponse.json({ error: 'backup_failed' }, { status: 500 });
   }
 }

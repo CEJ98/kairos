@@ -8,18 +8,18 @@ datasource db {
 }
 
 model Account {
-  id                String  @id @default(cuid())
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String?
-  access_token      String?
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String?
-  session_state     String?
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?
+  access_token       String?
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?
+  session_state      String?
   oauth_token_secret String?
   oauth_token        String?
 
@@ -48,22 +48,23 @@ model VerificationToken {
 // SQLite connector in Prisma does not support enums; use string fields instead.
 
 model User {
-  id            String        @id @default(cuid())
-  email         String        @unique
-  name          String?
-  passwordHash  String?
-  image         String?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  accounts      Account[]
-  sessions      Session[]
-  profile       Profile?
-  plans         Plan[]
-  bodyMetrics   BodyMetric[]
-  streaks       Streak[]
-  subscriptions Subscription[]
-  demoAccount   DemoAccount?
-  workouts      Workout[]     @relation("UserWorkouts")
+  id             String          @id @default(cuid())
+  email          String          @unique
+  name           String?
+  passwordHash   String?
+  image          String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  accounts       Account[]
+  sessions       Session[]
+  profile        Profile?
+  plans          Plan[]
+  bodyMetrics    BodyMetric[]
+  streaks        Streak[]
+  subscriptions  Subscription[]
+  demoAccount    DemoAccount?
+  workouts       Workout[]       @relation("UserWorkouts")
+  progressPhotos ProgressPhoto[]
 }
 
 model Profile {
@@ -73,7 +74,7 @@ model Profile {
   heightCm        Float?
   weightKg        Float?
   trainingMax     Float?
-  progressionRule String @default("VOLUME")
+  progressionRule String   @default("VOLUME")
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -81,17 +82,17 @@ model Profile {
 }
 
 model Plan {
-  id              String          @id @default(cuid())
-  userId          String
-  goal            String
+  id               String   @id @default(cuid())
+  userId           String
+  goal             String
   microcycleLength Int
-  mesocycleWeeks  Int
-  progressionRule String @default("VOLUME")
-  trainingMax     Float? @default(0)
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  mesocycleWeeks   Int
+  progressionRule  String   @default("VOLUME")
+  trainingMax      Float?   @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user     User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   workouts Workout[]
   metrics  AdherenceMetric[]
 
@@ -100,7 +101,7 @@ model Plan {
 }
 
 model Workout {
-  id          String            @id @default(cuid())
+  id          String    @id @default(cuid())
   planId      String
   userId      String?
   title       String
@@ -110,15 +111,15 @@ model Workout {
   microcycle  Int?
   mesocycle   Int?
   rpeTarget   Float?
-  restSeconds Int? @default(120)
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  restSeconds Int?      @default(120)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   plan Plan  @relation(fields: [planId], references: [id], onDelete: Cascade)
   user User? @relation("UserWorkouts", fields: [userId], references: [id])
 
-  exercises WorkoutExercise[]
-  sets      WorkoutSet[]
+  exercises        WorkoutExercise[]
+  sets             WorkoutSet[]
   adherenceMetrics AdherenceMetric[]
 
   @@index([planId, scheduledAt])
@@ -136,8 +137,8 @@ model WorkoutExercise {
   targetReps  Int
   rpeTarget   Float?
   restSeconds Int
-  microcycle  Int? @default(1)
-  mesocycle   Int? @default(1)
+  microcycle  Int?     @default(1)
+  mesocycle   Int?     @default(1)
   createdAt   DateTime @default(now())
 
   workout  Workout  @relation(fields: [workoutId], references: [id], onDelete: Cascade)
@@ -159,7 +160,7 @@ model Exercise {
   updatedAt   DateTime @updatedAt
 
   workoutExercises WorkoutExercise[]
-  workoutSets       WorkoutSet[]
+  workoutSets      WorkoutSet[]
 }
 
 model WorkoutSet {
@@ -182,15 +183,21 @@ model WorkoutSet {
 }
 
 model BodyMetric {
-  id        String   @id @default(cuid())
-  userId    String
-  date      DateTime @default(now())
-  weightKg  Float?
-  bodyFat   Float?
-  neckCm    Float?
-  waistCm   Float?
-  hipCm     Float?
-  createdAt DateTime @default(now())
+  id         String   @id @default(cuid())
+  userId     String
+  date       DateTime @default(now())
+  weight     Float?
+  bodyFat    Float?
+  muscleMass Float?
+  chest      Float?
+  waist      Float?
+  hips       Float?
+  leftArm    Float?
+  rightArm   Float?
+  leftThigh  Float?
+  rightThigh Float?
+  shoulders  Float?
+  createdAt  DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -199,12 +206,12 @@ model BodyMetric {
 }
 
 model Streak {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
   startDate DateTime
   endDate   DateTime?
   days      Int
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -212,13 +219,13 @@ model Streak {
 }
 
 model Subscription {
-  id               String   @id @default(cuid())
+  id               String    @id @default(cuid())
   userId           String
   provider         String
   status           String
   currentPeriodEnd DateTime?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -226,12 +233,12 @@ model Subscription {
 }
 
 model DemoAccount {
-  id          String   @id @default(cuid())
-  userId      String   @unique
+  id          String    @id @default(cuid())
+  userId      String    @unique
   expiresAt   DateTime
   convertedAt DateTime?
   seedVersion String
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -252,14 +259,11 @@ model AdherenceMetric {
 model ProgressPhoto {
   id        String   @id @default(cuid())
   userId    String
-  date      DateTime @default(now())
-  frontUrl  String?
-  sideUrl   String?
-  backUrl   String?
-  note      String?
+  url       String
+  notes     String?
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId, date])
+  @@index([userId, createdAt])
 }

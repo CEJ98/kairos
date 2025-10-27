@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logging";
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -49,7 +51,7 @@ export default function MetricsPage() {
       setPhotos(photosList);
       setSummary(summaryData);
     } catch (error) {
-      console.error('Error loading metrics data:', error);
+      logger.error('Error loading metrics data:', error);
     } finally {
       setIsLoading(false);
     }
