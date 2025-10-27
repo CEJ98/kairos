@@ -14,8 +14,12 @@ import * as Sentry from '@sentry/nextjs';
 import { getClientIp, hashIp } from '@/lib/security/privacy';
 import { randomUUID } from 'crypto';
 import { logRequest } from '@/lib/logging';
+import type { Prisma, Exercise } from '@prisma/client';
 
-type ExerciseLite = { id: string };
+type ExerciseLite = { id: Exercise['id'] };
+type WorkoutHistoryEntry = z.infer<typeof workoutHistorySchema>[number];
+type ProgressionAdjustment = { exerciseId: string; targetWeight: number; targetReps: number; adherence: number };
+type DayTemplate = { title: string; groups: string[] };
 
 const workoutHistorySchema = z.array(
   z.object({
@@ -73,7 +77,7 @@ export async function createPlan(raw: z.input<typeof planPreferencesSchema>) {
     }
 
     // Cargar biblioteca de ejercicios
-    const allExercises = await prisma.exercise.findMany({ orderBy: { createdAt: 'asc' } });
+    const allExercises: Exercise[] = await prisma.exercise.findMany({ orderBy: { createdAt: 'asc' } });
 
     // Filtrar por equipo disponible
     const equipmentPref = (input.availableEquipment || []).map((e) => e.toLowerCase());
@@ -88,12 +92,12 @@ export async function createPlan(raw: z.input<typeof planPreferencesSchema>) {
         : []
     );
 
-    const filtered = allowAll
+    const filtered: Exercise[] = allowAll
       ? allExercises
-      : allExercises.filter((e: any) => allowedEquipment.has((e.equipment || '').toLowerCase()));
+      : allExercises.filter((e: Exercise) => allowedEquipment.has((e.equipment || '').toLowerCase()));
 
     // Utilidades para selección
-    const byGroup: Record<string, ExerciseLite[]> = filtered.reduce((acc, e: any) => {
+    const byGroup: Record<string, ExerciseLite[]> = filtered.reduce((acc, e: Exercise) => {
       const key = (e.muscleGroup || 'Otros').toLowerCase();
       (acc[key] ||= []).push({ id: e.id });
       return acc;
@@ -120,7 +124,6 @@ export async function createPlan(raw: z.input<typeof planPreferencesSchema>) {
     }
 
     // Definir splits por frecuencia
-    type DayTemplate = { title: string; groups: string[] };
     let dayTemplates: DayTemplate[] = [];
     switch (input.frequency) {
       case 3:
@@ -172,7 +175,7 @@ export async function createPlan(raw: z.input<typeof planPreferencesSchema>) {
 
     const mesoWeeks = 4; // microciclos de 4 semanas
 
-    const workoutsCreate: any[] = [];
+    const workoutsCreate: Prisma.WorkoutCreateWithoutPlanInput[] = [];
     const startDate = new Date();
     for (let week = 0; week < mesoWeeks; week += 1) {
       for (let day = 0; day < dayTemplates.length; day += 1) {
@@ -186,7 +189,7 @@ export async function createPlan(raw: z.input<typeof planPreferencesSchema>) {
         const exercisesForDay = pick(tpl.groups, isEndurance ? 4 : 3);
 
         // Construir historial de desempeño para ajustar progresión
-        const historyEntries: any[] = [];
+        const historyEntries: WorkoutHistoryEntry[] = [];
         for (const ex of exercisesForDay) {
           const recent = await prisma.workoutSet.findMany({
             where: {
@@ -210,11 +213,11 @@ export async function createPlan(raw: z.input<typeof planPreferencesSchema>) {
 
         const adjustments = computeProgressionAdjustments(historyEntries, isStrength ? 'INTENSITY' : 'VOLUME');
         const adjustMap = new Map<string, { targetReps: number }>(
-          adjustments.map((a: any) => [a.exerciseId, { targetReps: a.targetReps }])
+          (adjustments as ProgressionAdjustment[]).map((a) => [a.exerciseId, { targetReps: a.targetReps }])
         );
 
-        const exerciseCreates = exercisesForDay.map((ex, order) => ({
-          exerciseId: ex.id,
+        const exerciseCreates: Prisma.WorkoutExerciseCreateWithoutWorkoutInput[] = exercisesForDay.map((ex, order) => ({
+          exercise: { connect: { id: ex.id } },
           order,
           targetSets: baseSets,
           targetReps: adjustMap.get(ex.id)?.targetReps ?? baseReps + weekVolumeBump,
@@ -229,7 +232,7 @@ export async function createPlan(raw: z.input<typeof planPreferencesSchema>) {
           const extra = pick(['cardio', 'core', 'full body'], 1);
           extra.forEach((ex) =>
             exerciseCreates.push({
-              exerciseId: ex.id,
+              exercise: { connect: { id: ex.id } },
               order: exerciseCreates.length,
               targetSets: Math.max(2, baseSets - 1),
               targetReps: Math.max(12, baseReps + weekVolumeBump + 2),
