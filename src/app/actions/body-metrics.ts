@@ -1,7 +1,7 @@
 'use server';
 
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { authOptions } from '@/lib/auth/options';
 import { prisma } from '@/lib/clients/prisma';
 import { bodyMetricSchema, progressPhotosSchema } from '@/lib/validation/body-metrics';
 import { uploadObject } from '@/lib/clients/supabase-storage';
@@ -12,11 +12,11 @@ export async function addBodyMetric(form: FormData) {
 
   const raw = {
     date: form.get('date') ? new Date(String(form.get('date'))) : undefined,
-    weightKg: form.get('weightKg') ? Number(form.get('weightKg')) : undefined,
+    weight: form.get('weight') ? Number(form.get('weight')) : undefined,
     bodyFat: form.get('bodyFat') ? Number(form.get('bodyFat')) : undefined,
     neckCm: form.get('neckCm') ? Number(form.get('neckCm')) : undefined,
-    waistCm: form.get('waistCm') ? Number(form.get('waistCm')) : undefined,
-    hipCm: form.get('hipCm') ? Number(form.get('hipCm')) : undefined,
+    waist: form.get('waist') ? Number(form.get('waist')) : undefined,
+    hips: form.get('hips') ? Number(form.get('hips')) : undefined,
   };
 
   const parsed = bodyMetricSchema.safeParse(raw);

@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,7 +18,7 @@ import {
   Cloud,
   Loader2
 } from 'lucide-react';
-import { Workout, WorkoutSet } from '@/types/workout';
+import type { Workout, WorkoutSet, Exercise } from '@/types/workout';
 import { DUMMY_CURRENT_WORKOUT } from '@/lib/dummy-data';
 import { saveWorkoutToRedis, loadWorkoutFromRedis } from '@/app/actions/workout-actions';
 import { useSession } from 'next-auth/react';
@@ -32,7 +33,7 @@ export function WorkoutEditor() {
   const [restTimer, setRestTimer] = useState<number | null>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('saved');
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isInitialMount = useRef(true);
 
   // Load workout from Redis on mount
@@ -44,9 +45,14 @@ export function WorkoutEditor() {
           const loadedWorkout: Workout = {
             ...result.data,
             scheduledAt: new Date(result.data.scheduledAt),
-            exercises: result.data.exercises.map(ex => ({
+            exercises: result.data.exercises.map((ex: { id: string; name: string; muscleGroup: string; equipment: string; sets: WorkoutSet[] }) => ({
               ...ex,
-              exercise: ex as any, // Type compatibility
+              exercise: {
+                id: ex.id,
+                name: ex.name,
+                muscleGroup: ex.muscleGroup,
+                equipment: ex.equipment,
+              } as Exercise,
               targetSets: ex.sets.length,
               targetReps: ex.sets[0]?.reps || 10,
               restSeconds: 90,
@@ -58,7 +64,7 @@ export function WorkoutEditor() {
         }
       });
     }
-  }, [sessionStatus, session?.user?.id]);
+  }, [sessionStatus, session?.user?.id, workout.id]);
 
   // Auto-save workout to Redis with debouncing
   const saveWorkout = useCallback(async (workoutToSave: Workout) => {

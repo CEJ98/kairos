@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Timer } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { saveRestSeconds, loadRestSeconds } from '@/app/actions/timer';
 
 interface KTimerProps {
   workoutId: string;
@@ -28,9 +27,17 @@ export function KTimer({ workoutId, defaultSeconds, onTick, onStop }: KTimerProp
     let cancelled = false;
     (async () => {
       try {
-        const persisted = await loadRestSeconds(workoutId);
-        if (!cancelled && typeof persisted === 'number' && persisted >= 0) {
-          setSeconds(persisted);
+        const res = await fetch(`/api/timer/rest?workoutId=${encodeURIComponent(workoutId)}`, {
+          cache: 'no-store'
+        });
+        if (res.ok) {
+          const data = (await res.json()) as { seconds: number | null };
+          const persisted = data.seconds;
+          if (!cancelled && typeof persisted === 'number' && persisted >= 0) {
+            setSeconds(persisted);
+          }
+        } else {
+          throw new Error('failed');
         }
       } catch (error) {
         if (typeof window !== 'undefined') {
@@ -54,7 +61,11 @@ export function KTimer({ workoutId, defaultSeconds, onTick, onStop }: KTimerProp
       }
       if (typeof navigator !== 'undefined' && navigator.onLine) {
         try {
-          await saveRestSeconds(workoutId, value);
+          await fetch('/api/timer/rest', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ workoutId, seconds: value })
+          });
           if (typeof window !== 'undefined') {
             window.localStorage.removeItem(storageKey);
           }

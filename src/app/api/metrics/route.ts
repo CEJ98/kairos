@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logging";
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
@@ -6,11 +7,11 @@ import { z } from 'zod';
 
 const bodyMetricSchema = z.object({
   date: z.string().datetime().optional(),
-  weightKg: z.number().positive().optional(),
+  weight: z.number().positive().optional(),
   bodyFat: z.number().min(0).max(100).optional(),
-  neckCm: z.number().positive().optional(),
-  waistCm: z.number().positive().optional(),
-  hipCm: z.number().positive().optional()
+  chest: z.number().positive().optional(),
+  waist: z.number().positive().optional(),
+  hips: z.number().positive().optional()
 });
 
 /**
@@ -41,11 +42,11 @@ export async function GET(req: NextRequest) {
       select: {
         id: true,
         date: true,
-        weightKg: true,
+        weight: true,
         bodyFat: true,
-        neckCm: true,
-        waistCm: true,
-        hipCm: true,
+        chest: true,
+        waist: true,
+        hips: true,
         createdAt: true
       }
     });
@@ -65,7 +66,7 @@ export async function GET(req: NextRequest) {
       }
     });
   } catch (error) {
-    console.error('Error obteniendo métricas:', error);
+    logger.error('Error obteniendo métricas:', error);
     return NextResponse.json(
       { error: 'Error al obtener métricas' },
       { status: 500 }
@@ -92,8 +93,8 @@ export async function POST(req: NextRequest) {
     const validatedData = bodyMetricSchema.parse(body);
 
     // Validar que al menos una métrica esté presente
-    if (!validatedData.weightKg && !validatedData.bodyFat &&
-        !validatedData.neckCm && !validatedData.waistCm && !validatedData.hipCm) {
+    if (!validatedData.weight && !validatedData.bodyFat &&
+        !validatedData.chest && !validatedData.waist && !validatedData.hips) {
       return NextResponse.json(
         { error: 'Debe proporcionar al menos una métrica' },
         { status: 400 }
@@ -105,20 +106,20 @@ export async function POST(req: NextRequest) {
       data: {
         userId: session.user.id,
         date: validatedData.date ? new Date(validatedData.date) : new Date(),
-        weightKg: validatedData.weightKg,
+        weight: validatedData.weight,
         bodyFat: validatedData.bodyFat,
-        neckCm: validatedData.neckCm,
-        waistCm: validatedData.waistCm,
-        hipCm: validatedData.hipCm
+        chest: validatedData.chest,
+        waist: validatedData.waist,
+        hips: validatedData.hips
       },
       select: {
         id: true,
         date: true,
-        weightKg: true,
+        weight: true,
         bodyFat: true,
-        neckCm: true,
-        waistCm: true,
-        hipCm: true,
+        chest: true,
+        waist: true,
+        hips: true,
         createdAt: true
       }
     });
@@ -139,7 +140,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.error('Error creando métrica:', error);
+    logger.error('Error creando métrica:', error);
     return NextResponse.json(
       { error: 'Error al crear métrica' },
       { status: 500 }

@@ -147,7 +147,7 @@ export async function createDemoAccount() {
   await prisma.bodyMetric.create({
     data: {
       userId: user.id,
-      weightKg: 80,
+      weight: 80,
       bodyFat: 18
     }
   });

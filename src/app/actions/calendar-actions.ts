@@ -8,31 +8,7 @@ import { startOfWeek, endOfWeek, eachDayOfInterval, format, parseISO, isSameDay 
 import { es } from 'date-fns/locale';
 import { authOptions } from '@/lib/auth/options';
 import { prisma } from '@/lib/clients/prisma';
-
-export interface WorkoutCardData {
-  id: string;
-  title: string;
-  scheduledAt: Date;
-  completedAt: Date | null;
-  duration: number; // minutes
-  muscleGroups: string[];
-  exerciseCount: number;
-  status: 'completed' | 'today' | 'pending' | 'overdue';
-}
-
-export interface DayData {
-  date: Date;
-  dayName: string;
-  dayNumber: number;
-  isToday: boolean;
-  workouts: WorkoutCardData[];
-}
-
-export interface WeekCalendarData {
-  days: DayData[];
-  weekStart: Date;
-  weekEnd: Date;
-}
+import type { WorkoutCardData, DayData, WeekCalendarData } from '@/types/calendar';
 
 /**
  * Get weekly calendar data with all workouts for the current week
@@ -88,23 +64,23 @@ export async function getWeekCalendarData(weekOffset: number = 0): Promise<WeekC
     const isToday = isSameDay(date, today);
 
     // Get workouts for this day
-    const dayWorkouts = (activePlan as any).workouts.filter((workout: any) =>
+    const dayWorkouts = activePlan.workouts.filter((workout) =>
       isSameDay(workout.scheduledAt, date)
     );
 
     // Process workout data
-    const workouts: WorkoutCardData[] = dayWorkouts.map((workout: any) => {
+    const workouts: WorkoutCardData[] = dayWorkouts.map((workout) => {
       // Extract muscle groups from exercises
       const muscleGroups = Array.from(
         new Set(
           workout.sets
-            .filter((set: any) => set.exercise?.muscleGroup)
-            .map((set: any) => set.exercise!.muscleGroup)
+            .filter((set) => set.exercise?.muscleGroup)
+            .map((set) => set.exercise!.muscleGroup as string)
         )
       );
 
       // Calculate duration (estimate: 10 mins per exercise)
-      const exerciseCount = new Set(workout.sets.map((set: any) => set.exerciseId)).size;
+      const exerciseCount = new Set(workout.sets.map((set) => set.exerciseId)).size;
       const duration = exerciseCount * 10;
 
       // Determine status

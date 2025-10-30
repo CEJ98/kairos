@@ -2,7 +2,7 @@
 
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AdherenceData } from '@/app/actions/progress-actions';
+import type { AdherenceData } from '@/types/progress';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 interface AdherenceChartProps {

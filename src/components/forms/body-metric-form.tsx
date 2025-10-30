@@ -38,8 +38,8 @@ export function BodyMetricForm({ onSaved }: { onSaved?: () => void }) {
               <input type="date" name="date" id="date" className="border rounded px-2 py-1" />
             </div>
             <div className="flex flex-col gap-1">
-              <label htmlFor="weightKg" className="text-sm font-medium">Peso (kg)</label>
-              <input type="number" step="0.1" name="weightKg" id="weightKg" placeholder="72.5" className="border rounded px-2 py-1" />
+              <label htmlFor="weight" className="text-sm font-medium">Peso (kg)</label>
+              <input type="number" step="0.1" name="weight" id="weight" placeholder="72.5" className="border rounded px-2 py-1" />
             </div>
             <div className="flex flex-col gap-1">
               <label htmlFor="bodyFat" className="text-sm font-medium">Grasa (%)</label>
@@ -50,12 +50,12 @@ export function BodyMetricForm({ onSaved }: { onSaved?: () => void }) {
               <input type="number" step="0.1" name="neckCm" id="neckCm" placeholder="38" className="border rounded px-2 py-1" />
             </div>
             <div className="flex flex-col gap-1">
-              <label htmlFor="waistCm" className="text-sm font-medium">Cintura (cm)</label>
-              <input type="number" step="0.1" name="waistCm" id="waistCm" placeholder="82" className="border rounded px-2 py-1" />
+              <label htmlFor="waist" className="text-sm font-medium">Cintura (cm)</label>
+              <input type="number" step="0.1" name="waist" id="waist" placeholder="82" className="border rounded px-2 py-1" />
             </div>
             <div className="flex flex-col gap-1">
-              <label htmlFor="hipCm" className="text-sm font-medium">Cadera (cm)</label>
-              <input type="number" step="0.1" name="hipCm" id="hipCm" placeholder="98" className="border rounded px-2 py-1" />
+              <label htmlFor="hips" className="text-sm font-medium">Cadera (cm)</label>
+              <input type="number" step="0.1" name="hips" id="hips" placeholder="98" className="border rounded px-2 py-1" />
             </div>
           </div>
 

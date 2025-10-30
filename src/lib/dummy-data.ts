@@ -1,5 +1,5 @@
-import { Workout, Exercise, ProgressDataPoint, CalendarEvent } from '@/types/workout';
-import { addDays, subDays, subWeeks } from 'date-fns';
+import type { Workout, Exercise, ProgressDataPoint, CalendarEvent } from '@/types/workout';
+import { addDays, subDays } from 'date-fns';
 
 // Ejercicios de ejemplo
 export const DUMMY_EXERCISES: Exercise[] = [

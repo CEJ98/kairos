@@ -28,7 +28,7 @@ type WorkoutSetWithWorkout = {
   workout: {
     completedAt: Date | null;
   };
-  exercise?: { id: string; name: string; muscleGroup: string };
+  exercise?: { id: string; name: string; muscleGroup: string | null };
 };
 
  type CalendarEvent = {
@@ -94,42 +94,42 @@ type WorkoutSetWithWorkout = {
      })
    ]);
 
-   const weightData = metrics.map((metric: { date: Date; weightKg: number | null }) => ({
-     label: format(metric.date, "d MMM", { locale: es }),
-     value: metric.weightKg ?? 0
-   }));
+  const weightData = metrics.map((metric) => ({
+    label: format(metric.date, "d MMM", { locale: es }),
+    value: metric.weight ?? 0
+  }));
 
-   const oneRmDataByExercise = computeOneRmByExercise(sets as any as WorkoutSetWithWorkout[]);
+  const oneRmDataByExercise = computeOneRmByExercise(sets as WorkoutSetWithWorkout[]);
    const topOneRm = oneRmDataByExercise
      .sort((a, b) => b.value - a.value)
      .slice(0, 6);
 
-   const { stackedVolume, seriesKeys } = computeStackedWeeklyVolume(sets as any as WorkoutSetWithWorkout[]);
-   const adherenceData = adherence.map((entry: { createdAt: Date; adherence: number }) => ({
-     label: format(entry.createdAt, "d MMM", { locale: es }),
-     value: Number((entry.adherence * 100).toFixed(1))
-   }));
+  const { stackedVolume, seriesKeys } = computeStackedWeeklyVolume(sets as WorkoutSetWithWorkout[]);
+  const adherenceData = adherence.map((entry) => ({
+    label: format(entry.createdAt, "d MMM", { locale: es }),
+    value: Number((entry.adherence * 100).toFixed(1))
+  }));
 
    const meanAdherence = adherenceData.length
      ? adherenceData.reduce((acc, cur) => acc + cur.value, 0) / adherenceData.length
      : 0;
 
-   const daysCompleted = new Set(
-     (sets as any as WorkoutSetWithWorkout[])
+  const daysCompleted = new Set(
+    (sets as WorkoutSetWithWorkout[])
        .map(s => s.workout.completedAt ? format(s.workout.completedAt, 'yyyy-MM-dd') : null)
        .filter(Boolean)
-   ).size;
-   const totalVolume = (sets as any as WorkoutSetWithWorkout[])
+  ).size;
+  const totalVolume = (sets as WorkoutSetWithWorkout[])
      .reduce((acc, s) => acc + s.weight * s.reps, 0);
-   const prsCount = computePrsCount(sets as any as WorkoutSetWithWorkout[]);
+  const prsCount = computePrsCount(sets as WorkoutSetWithWorkout[]);
 
-   const calendarEvents: CalendarEvent[] = upcoming.map(
-     (workout: { id: string; title: string; scheduledAt: Date }) => ({
-     id: workout.id,
-     title: workout.title,
-     scheduledAt: workout.scheduledAt
-   })
-   );
+  const calendarEvents: CalendarEvent[] = upcoming.map(
+    (workout) => ({
+    id: workout.id,
+    title: workout.title,
+    scheduledAt: workout.scheduledAt
+  })
+  );
 
    return (
      <AppShell>

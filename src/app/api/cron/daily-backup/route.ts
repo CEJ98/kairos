@@ -1,5 +1,4 @@
 import { logger } from "@/lib/logging";
-
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/clients/prisma';
 import * as Sentry from '@sentry/nextjs';

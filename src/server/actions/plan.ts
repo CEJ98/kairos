@@ -18,8 +18,11 @@ import type { Prisma, Exercise } from '@prisma/client';
 
 type ExerciseLite = { id: Exercise['id'] };
 type WorkoutHistoryEntry = z.infer<typeof workoutHistorySchema>[number];
-type ProgressionAdjustment = { exerciseId: string; targetWeight: number; targetReps: number; adherence: number };
 type DayTemplate = { title: string; groups: string[] };
+
+// Aliases de tipos Prisma para mayor claridad en creaciones
+type WorkoutCreateData = Prisma.WorkoutCreateWithoutPlanInput;
+type WorkoutExerciseCreateData = Prisma.WorkoutExerciseCreateWithoutWorkoutInput;
 
 const workoutHistorySchema = z.array(
   z.object({
@@ -48,7 +51,7 @@ const workoutDraftSchema = z.object({
   sets: z.array(draftSetSchema).optional()
 });
 
-function getSafeRedis() {
+function getSafeRedis(): ReturnType<typeof getRedisClient> | null {
   try {
     return getRedisClient();
   } catch {
@@ -97,13 +100,16 @@ export async function createPlan(raw: z.input<typeof planPreferencesSchema>) {
       : allExercises.filter((e: Exercise) => allowedEquipment.has((e.equipment || '').toLowerCase()));
 
     // Utilidades para selección
-    const byGroup: Record<string, ExerciseLite[]> = filtered.reduce((acc, e: Exercise) => {
-      const key = (e.muscleGroup || 'Otros').toLowerCase();
-      (acc[key] ||= []).push({ id: e.id });
-      return acc;
-    }, {} as Record<string, ExerciseLite[]>);
+    const byGroup: Record<string, ExerciseLite[]> = filtered.reduce<Record<string, ExerciseLite[]>>(
+      (acc, e: Exercise) => {
+        const key = (e.muscleGroup || 'Otros').toLowerCase();
+        (acc[key] ||= []).push({ id: e.id });
+        return acc;
+      },
+      {}
+    );
 
-    function pick(groupKeys: string[], count: number) {
+    const pick = (groupKeys: string[], count: number) => {
       const pool: ExerciseLite[] = [];
       for (const k of groupKeys) {
         const g = byGroup[k.toLowerCase()] || [];
@@ -121,7 +127,7 @@ export async function createPlan(raw: z.input<typeof planPreferencesSchema>) {
         }
       }
       return selected;
-    }
+    };
 
     // Definir splits por frecuencia
     let dayTemplates: DayTemplate[] = [];
@@ -175,7 +181,7 @@ export async function createPlan(raw: z.input<typeof planPreferencesSchema>) {
 
     const mesoWeeks = 4; // microciclos de 4 semanas
 
-    const workoutsCreate: Prisma.WorkoutCreateWithoutPlanInput[] = [];
+    const workoutsCreate: WorkoutCreateData[] = [];
     const startDate = new Date();
     for (let week = 0; week < mesoWeeks; week += 1) {
       for (let day = 0; day < dayTemplates.length; day += 1) {
@@ -213,10 +219,10 @@ export async function createPlan(raw: z.input<typeof planPreferencesSchema>) {
 
         const adjustments = computeProgressionAdjustments(historyEntries, isStrength ? 'INTENSITY' : 'VOLUME');
         const adjustMap = new Map<string, { targetReps: number }>(
-          (adjustments as ProgressionAdjustment[]).map((a) => [a.exerciseId, { targetReps: a.targetReps }])
+          adjustments.map((a) => [a.exerciseId, { targetReps: a.targetReps }])
         );
 
-        const exerciseCreates: Prisma.WorkoutExerciseCreateWithoutWorkoutInput[] = exercisesForDay.map((ex, order) => ({
+        const exerciseCreates: WorkoutExerciseCreateData[] = exercisesForDay.map((ex, order) => ({
           exercise: { connect: { id: ex.id } },
           order,
           targetSets: baseSets,

@@ -1,4 +1,5 @@
 'use client';
+import { clientLogger } from "@/lib/logging/client";
 
 import { useEffect } from 'react';
 
@@ -8,9 +9,26 @@ export function PwaProvider() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (!('serviceWorker' in navigator)) return;
-    const isLocalhost =
-      window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    if (process.env.NODE_ENV !== 'production' && !isLocalhost) return;
+    // En desarrollo, NO registramos el SW y además limpiamos cualquier registro previo
+    if (process.env.NODE_ENV !== 'production') {
+      // Desregistrar SWs previos y limpiar caches usadas por la app
+      navigator.serviceWorker
+        .getRegistrations()
+        .then((regs) => regs.forEach((r) => r.unregister()))
+        .catch(() => {});
+
+      if ('caches' in window) {
+        caches
+          .keys()
+          .then((keys) => keys.forEach((key) => {
+            if (key.startsWith('kairos-')) {
+              caches.delete(key).catch(() => {});
+            }
+          }))
+          .catch(() => {});
+      }
+      return;
+    }
 
     let refreshing = false;
     let controllerListener: (() => void) | null = null;
@@ -41,7 +59,7 @@ export function PwaProvider() {
         controllerListener = handleControllerChange;
         navigator.serviceWorker.addEventListener('controllerchange', controllerListener);
       } catch (error) {
-        console.error('Error registrando service worker', error);
+        clientLogger.error('Error registrando service worker', error);
       }
     };
 

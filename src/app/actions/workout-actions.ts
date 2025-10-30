@@ -1,9 +1,10 @@
 'use server';
 
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { authOptions } from '@/lib/auth/options';
 import { redis, REDIS_KEYS, RedisWorkoutData, SaveWorkoutResult } from '@/lib/redis';
 import { revalidatePath } from 'next/cache';
+import { logger } from '@/lib/logging';
 
 /**
  * Save workout to Redis with autosave capability
@@ -53,7 +54,7 @@ export async function saveWorkoutToRedis(
       lastModified: now,
     };
   } catch (error) {
-    console.error('Error saving workout to Redis:', error);
+    logger.error('Error saving workout to Redis:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Error desconocido al guardar',
@@ -104,7 +105,7 @@ export async function loadWorkoutFromRedis(
       data,
     };
   } catch (error) {
-    console.error('Error loading workout from Redis:', error);
+    logger.error('Error loading workout from Redis:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Error desconocido al cargar',
@@ -142,7 +143,7 @@ export async function getUserWorkouts(): Promise<{
       workoutIds: workoutIds || [],
     };
   } catch (error) {
-    console.error('Error getting user workouts:', error);
+    logger.error('Error getting user workouts:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Error desconocido',
@@ -181,7 +182,7 @@ export async function deleteWorkoutFromRedis(
       success: true,
     };
   } catch (error) {
-    console.error('Error deleting workout from Redis:', error);
+    logger.error('Error deleting workout from Redis:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Error desconocido al eliminar',
@@ -226,7 +227,7 @@ export async function saveWorkoutSession(
       lastModified: now,
     };
   } catch (error) {
-    console.error('Error saving workout session:', error);
+    logger.error('Error saving workout session:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Error desconocido',
@@ -268,7 +269,7 @@ export async function loadWorkoutSession(
       data,
     };
   } catch (error) {
-    console.error('Error loading workout session:', error);
+    logger.error('Error loading workout session:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Error desconocido',

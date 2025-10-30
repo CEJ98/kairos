@@ -1,4 +1,5 @@
 "use client";
+import { clientLogger } from "@/lib/logging/client";
 
 import { useMemo, useState, useTransition } from "react";
 import { DndContext, DragEndEvent, DragOverlay, PointerSensor, useSensor, useSensors, useDraggable, useDroppable } from "@dnd-kit/core";
@@ -179,7 +180,7 @@ export function WeeklyDndCalendar({ sessions, referenceDate = new Date() }: Week
         // rollback on error
         setLocal((prev) => prev.map((s) => (s.id === workoutId ? { ...s, scheduledAt: original } : s)));
         // optional: toast
-        // console.error(err);
+        // clientLogger.error(err);
       }
     });
   };

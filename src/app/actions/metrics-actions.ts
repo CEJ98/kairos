@@ -1,6 +1,6 @@
-import { logger } from "@/lib/logging";
-
 'use server';
+
+import { logger } from "@/lib/logging";
 
 import { getServerSession } from 'next-auth';
 import { revalidatePath } from 'next/cache';
@@ -33,42 +33,7 @@ export type BodyWeightInput = z.infer<typeof bodyWeightSchema>;
 export type BodyMeasurementsInput = z.infer<typeof bodyMeasurementsSchema>;
 
 // Types for returned data
-export interface BodyWeightData {
-  id: string;
-  date: Date;
-  weight: number;
-  bodyFat: number | null;
-  muscleMass: number | null;
-}
-
-export interface BodyMeasurementsData {
-  id: string;
-  date: Date;
-  chest: number | null;
-  waist: number | null;
-  hips: number | null;
-  leftArm: number | null;
-  rightArm: number | null;
-  leftThigh: number | null;
-  rightThigh: number | null;
-  shoulders: number | null;
-}
-
-export interface ProgressPhotoData {
-  id: string;
-  url: string;
-  createdAt: Date;
-  notes: string | null;
-}
-
-export interface MetricsSummary {
-  currentWeight: number | null;
-  weightChange: number | null;
-  currentBodyFat: number | null;
-  bodyFatChange: number | null;
-  totalMeasurements: number;
-  totalPhotos: number;
-}
+import type { BodyWeightData, BodyMeasurementsData, ProgressPhotoData, MetricsSummary } from '@/types/metrics';
 
 /**
  * Save body weight entry
@@ -104,7 +69,7 @@ export async function saveBodyWeight(
       data: {
         id: bodyMetric.id,
         date: bodyMetric.date,
-        weight: bodyMetric.weight,
+        weight: validated.weight,
         bodyFat: bodyMetric.bodyFat,
         muscleMass: bodyMetric.muscleMass,
       },
@@ -194,29 +159,21 @@ export async function getBodyWeightHistory(
       date: {
         gte: startDate,
       },
-      weight: {
-        not: null,
-      },
     },
     orderBy: {
       date: 'asc',
     },
-    select: {
-      id: true,
-      date: true,
-      weight: true,
-      bodyFat: true,
-      muscleMass: true,
-    },
   });
 
-  return metrics.map((m) => ({
-    id: m.id,
-    date: m.date,
-    weight: m.weight!,
-    bodyFat: m.bodyFat,
-    muscleMass: m.muscleMass,
-  }));
+  return metrics
+    .filter((m) => m.weight != null)
+    .map((m) => ({
+      id: m.id,
+      date: m.date,
+      weight: (m.weight ?? 0) as number,
+      bodyFat: m.bodyFat ?? null,
+      muscleMass: m.muscleMass ?? null,
+    }));
 }
 
 /**
@@ -237,35 +194,24 @@ export async function getBodyMeasurementsHistory(
       date: {
         gte: startDate,
       },
-      OR: [
-        { chest: { not: null } },
-        { waist: { not: null } },
-        { hips: { not: null } },
-        { leftArm: { not: null } },
-        { rightArm: { not: null } },
-        { leftThigh: { not: null } },
-        { rightThigh: { not: null } },
-        { shoulders: { not: null } },
-      ],
     },
     orderBy: {
       date: 'asc',
     },
-    select: {
-      id: true,
-      date: true,
-      chest: true,
-      waist: true,
-      hips: true,
-      leftArm: true,
-      rightArm: true,
-      leftThigh: true,
-      rightThigh: true,
-      shoulders: true,
-    },
   });
 
-  return metrics;
+  return metrics.map((m) => ({
+    id: m.id,
+    date: m.date,
+    chest: m.chest ?? null,
+    waist: m.waist ?? null,
+    hips: m.hips ?? null,
+    leftArm: m.leftArm ?? null,
+    rightArm: m.rightArm ?? null,
+    leftThigh: m.leftThigh ?? null,
+    rightThigh: m.rightThigh ?? null,
+    shoulders: m.shoulders ?? null,
+  }));
 }
 
 /**
@@ -280,35 +226,25 @@ export async function getLatestMeasurements(): Promise<BodyMeasurementsData | nu
   const latest = await prisma.bodyMetric.findFirst({
     where: {
       userId,
-      OR: [
-        { chest: { not: null } },
-        { waist: { not: null } },
-        { hips: { not: null } },
-        { leftArm: { not: null } },
-        { rightArm: { not: null } },
-        { leftThigh: { not: null } },
-        { rightThigh: { not: null } },
-        { shoulders: { not: null } },
-      ],
     },
     orderBy: {
       date: 'desc',
     },
-    select: {
-      id: true,
-      date: true,
-      chest: true,
-      waist: true,
-      hips: true,
-      leftArm: true,
-      rightArm: true,
-      leftThigh: true,
-      rightThigh: true,
-      shoulders: true,
-    },
   });
 
-  return latest;
+  if (!latest) return null;
+  return {
+    id: latest.id,
+    date: latest.date,
+    chest: latest.chest ?? null,
+    waist: latest.waist ?? null,
+    hips: latest.hips ?? null,
+    leftArm: latest.leftArm ?? null,
+    rightArm: latest.rightArm ?? null,
+    leftThigh: latest.leftThigh ?? null,
+    rightThigh: latest.rightThigh ?? null,
+    shoulders: latest.shoulders ?? null,
+  };
 }
 
 /**
@@ -431,10 +367,8 @@ export async function getMetricsSummary(): Promise<MetricsSummary | null> {
   const latestWeight = await prisma.bodyMetric.findFirst({
     where: {
       userId,
-      weight: { not: null },
     },
     orderBy: { date: 'desc' },
-    select: { weight: true, bodyFat: true, date: true },
   });
 
   // Get weight from 30 days ago
@@ -442,23 +376,14 @@ export async function getMetricsSummary(): Promise<MetricsSummary | null> {
   const previousWeight = await prisma.bodyMetric.findFirst({
     where: {
       userId,
-      weight: { not: null },
       date: { lte: thirtyDaysAgo },
     },
     orderBy: { date: 'desc' },
-    select: { weight: true, bodyFat: true },
   });
 
   // Count measurements
   const measurementsCount = await prisma.bodyMetric.count({
-    where: {
-      userId,
-      OR: [
-        { chest: { not: null } },
-        { waist: { not: null } },
-        { hips: { not: null } },
-      ],
-    },
+    where: { userId },
   });
 
   // Count photos
@@ -466,20 +391,24 @@ export async function getMetricsSummary(): Promise<MetricsSummary | null> {
     where: { userId },
   });
 
+  const latestWeightVal = latestWeight?.weight ?? null;
+  const previousWeightVal = previousWeight?.weight ?? null;
   const weightChange =
-    latestWeight && previousWeight
-      ? Number((latestWeight.weight! - previousWeight.weight!).toFixed(1))
+    latestWeightVal != null && previousWeightVal != null
+      ? Number(((latestWeightVal as number) - (previousWeightVal as number)).toFixed(1))
       : null;
 
+  const latestBodyFat = latestWeight?.bodyFat ?? null;
+  const previousBodyFat = previousWeight?.bodyFat ?? null;
   const bodyFatChange =
-    latestWeight?.bodyFat && previousWeight?.bodyFat
-      ? Number((latestWeight.bodyFat - previousWeight.bodyFat).toFixed(1))
+    latestBodyFat != null && previousBodyFat != null
+      ? Number(((latestBodyFat as number) - (previousBodyFat as number)).toFixed(1))
       : null;
 
   return {
-    currentWeight: latestWeight?.weight ?? null,
+    currentWeight: latestWeightVal ?? null,
     weightChange,
-    currentBodyFat: latestWeight?.bodyFat ?? null,
+    currentBodyFat: latestBodyFat ?? null,
     bodyFatChange,
     totalMeasurements: measurementsCount,
     totalPhotos: photosCount,

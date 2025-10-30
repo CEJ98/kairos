@@ -26,9 +26,13 @@ function initPosthog() {
 export function trackClient(event: string) {
   try {
     // Prefer Umami if available, otherwise use PostHog
-    if (typeof window !== 'undefined' && (window as any).umami && typeof (window as any).umami.track === 'function') {
-      (window as any).umami.track(event);
-      return;
+    if (typeof window !== 'undefined') {
+      type Umami = { track: (event: string) => void };
+      const w = window as Window & { umami?: Umami };
+      if (w.umami && typeof w.umami.track === 'function') {
+        w.umami.track(event);
+        return;
+      }
     }
     initPosthog();
     if (initialized) {

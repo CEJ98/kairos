@@ -18,7 +18,7 @@ type AdherenceMetric = { adherence: number };
 type WorkoutSet = { weight: number; reps: number };
 type UpcomingWorkout = { id: string; title: string; scheduledAt: Date };
 type RecentWorkout = { id: string; title: string; completedAt: Date | null; sets: WorkoutSet[] };
-type BodyMetric = { id: string; date: Date; weightKg: number | null; bodyFat: number | null };
+type BodyMetric = { id: string; date: Date; weight: number | null; bodyFat: number | null };
 
 export default async function DashboardPage() {
   const session = await authSession();
@@ -102,7 +102,7 @@ export default async function DashboardPage() {
     },
     {
       label: "Peso actual",
-      value: latestMetric?.weightKg ? `${latestMetric.weightKg.toFixed(1)} kg` : "Sin datos"
+      value: latestMetric?.weight ? `${latestMetric.weight.toFixed(1)} kg` : "Sin datos"
     },
     {
       label: "Volumen última sesión",
@@ -238,7 +238,7 @@ export default async function DashboardPage() {
                   >
                     <span>{format(metric.date, "d MMM", { locale: es })}</span>
                     <span className="font-semibold text-foreground">
-                      {metric.weightKg ? `${metric.weightKg.toFixed(1)} kg` : "--"}
+                      {metric.weight ? `${metric.weight.toFixed(1)} kg` : "--"}
                     </span>
                     <span>
                       {metric.bodyFat ? `${metric.bodyFat.toFixed(1)}% grasa` : "Sin lectura"}

@@ -5,7 +5,7 @@ import { LoginForm } from '@/components/auth/login-form';
 import { RegisterForm } from '@/components/auth/register-form';
 import { Dumbbell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { startDemoFlow } from '@/app/actions/demo';
+import Link from 'next/link';
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -65,9 +65,11 @@ export default function AuthPage() {
         <div className="w-full max-w-md space-y-6">
           {isLogin ? <LoginForm /> : <RegisterForm />}
 
-          <form action={startDemoFlow} className="mt-2">
-            <Button type="submit" size="lg" className="w-full">Probar Cuenta Demo</Button>
-          </form>
+          <div className="mt-2">
+            <Button asChild size="lg" className="w-full">
+              <Link href="/demo/auto-login">Probar Cuenta Demo</Link>
+            </Button>
+          </div>
 
           <div className="text-center text-sm">
             {isLogin ? (

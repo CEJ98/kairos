@@ -17,14 +17,15 @@ export default async function BodyMetricsPage() {
   const latest = rawMetrics.at(-1);
   const radarData = latest
     ? [
-        { metric: 'Cuello', value: latest.neckCm ?? 0 },
-        { metric: 'Cintura', value: latest.waistCm ?? 0 },
-        { metric: 'Cadera', value: latest.hipCm ?? 0 }
+        { metric: 'Pecho', value: latest.chest ?? 0 },
+        { metric: 'Cintura', value: latest.waist ?? 0 },
+        { metric: 'Cadera', value: latest.hips ?? 0 }
       ]
     : [];
 
-  const beforeUrl = photos[1]?.frontUrl || photos[1]?.sideUrl || photos[1]?.backUrl;
-  const afterUrl = photos[0]?.frontUrl || photos[0]?.sideUrl || photos[0]?.backUrl;
+  // Usar fotos con una sola URL por entrada
+  const beforeUrl = photos[1]?.url;
+  const afterUrl = photos[0]?.url;
 
   return (
     <AppLayout

@@ -1,7 +1,7 @@
 'use server';
 
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { authOptions } from '@/lib/auth/options';
 import { prisma } from '@/lib/clients/prisma';
 import { startOfWeek, formatISO, subWeeks } from 'date-fns';
 

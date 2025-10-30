@@ -21,13 +21,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import {
-  saveBodyWeight,
-  saveBodyMeasurements,
-  saveProgressPhoto,
-  BodyWeightInput,
-  BodyMeasurementsInput,
-} from '@/app/actions/metrics-actions';
+import type { BodyWeightInput, BodyMeasurementsInput } from '@/types/metrics';
 
 // Schemas
 const weightSchema = z.object({
@@ -53,9 +47,21 @@ interface MetricsFormsProps {
   isOpen: boolean;
   onClose: () => void;
   initialTab?: 'weight' | 'measurements' | 'photo';
+  saveBodyWeightAction: (data: BodyWeightInput) => Promise<{ success: boolean; error?: string }>;
+  saveBodyMeasurementsAction: (
+    data: BodyMeasurementsInput
+  ) => Promise<{ success: boolean; error?: string }>;
+  saveProgressPhotoAction: (dataUrl: string, notes?: string) => Promise<{ success: boolean; error?: string }>;
 }
 
-export function MetricsForms({ isOpen, onClose, initialTab = 'weight' }: MetricsFormsProps) {
+export function MetricsForms({
+  isOpen,
+  onClose,
+  initialTab = 'weight',
+  saveBodyWeightAction,
+  saveBodyMeasurementsAction,
+  saveProgressPhotoAction,
+}: MetricsFormsProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState(initialTab);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -87,7 +93,7 @@ export function MetricsForms({ isOpen, onClose, initialTab = 'weight' }: Metrics
 
   const handleWeightSubmit = async (data: BodyWeightInput) => {
     setIsSubmitting(true);
-    const result = await saveBodyWeight(data);
+    const result = await saveBodyWeightAction(data);
 
     if (result.success) {
       toast.success('Peso registrado exitosamente');
@@ -102,7 +108,7 @@ export function MetricsForms({ isOpen, onClose, initialTab = 'weight' }: Metrics
 
   const handleMeasurementsSubmit = async (data: BodyMeasurementsInput) => {
     setIsSubmitting(true);
-    const result = await saveBodyMeasurements(data);
+    const result = await saveBodyMeasurementsAction(data);
 
     if (result.success) {
       toast.success('Medidas registradas exitosamente');
@@ -154,7 +160,7 @@ export function MetricsForms({ isOpen, onClose, initialTab = 'weight' }: Metrics
       reader.onloadend = async () => {
         const dataUrl = reader.result as string;
 
-        const result = await saveProgressPhoto(dataUrl, photoNotes || undefined);
+        const result = await saveProgressPhotoAction(dataUrl, photoNotes || undefined);
 
         if (result.success) {
           toast.success('Foto guardada exitosamente');

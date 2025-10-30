@@ -2,7 +2,7 @@
 
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { StrengthData } from '@/app/actions/progress-actions';
+import type { StrengthData } from '@/types/progress';
 import { useMemo } from 'react';
 
 interface StrengthChartProps {

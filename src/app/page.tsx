@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { startDemoFlow } from '@/app/actions/demo';
+// Demo autologin se maneja en cliente via /demo/auto-login
 
 export default function LandingPage() {
 	return (
@@ -16,12 +16,12 @@ export default function LandingPage() {
 						<span className="text-xl font-bold text-gray-900">Kairos</span>
 					</div>
 					<div className="flex items-center space-x-4">
-						<Link href="/auth">
-							<Button variant="ghost">Iniciar Sesión</Button>
-						</Link>
-						<Link href="/auth">
-							<Button>Registrarse</Button>
-						</Link>
+						<Button variant="ghost" asChild>
+							<Link href="/auth">Iniciar Sesión</Link>
+						</Button>
+						<Button asChild>
+							<Link href="/auth">Registrarse</Link>
+						</Button>
 					</div>
 				</nav>
 			</header>
@@ -44,21 +44,14 @@ export default function LandingPage() {
 					</p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
--            	<Link href="/demo">
--            		<Button size="lg" className="text-lg px-8 py-3">
--            			Probar Demo
--            		</Button>
--            	</Link>
-+            	<form action={startDemoFlow}>
-+            		<Button type="submit" size="lg" className="text-lg px-8 py-3">
-+            			Probar Demo
-+            		</Button>
-+            	</form>
-						<Link href="/auth">
-							<Button size="lg" variant="outline" className="text-lg px-8 py-3">
-								Crear Cuenta Gratis
-							</Button>
-						</Link>
+            	<Link href="/demo/auto-login">
+            		<Button size="lg" className="text-lg px-8 py-3">
+            			Probar Demo
+            		</Button>
+            	</Link>
+						<Button size="lg" variant="outline" className="text-lg px-8 py-3" asChild>
+							<Link href="/auth">Crear Cuenta Gratis</Link>
+						</Button>
 					</div>
 
 					{/* Features Grid */}

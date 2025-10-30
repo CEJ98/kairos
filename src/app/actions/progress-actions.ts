@@ -1,58 +1,18 @@
 'use server';
 
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { authOptions } from '@/lib/auth/options';
 import { prisma } from '@/lib/clients/prisma';
 import { subWeeks, format } from 'date-fns';
-
-export interface BodyWeightData {
-  date: string;
-  weight: number;
-  bodyFat?: number;
-  muscleMass?: number;
-}
-
-export interface StrengthData {
-  date: string;
-  exercise: string;
-  oneRepMax: number;
-}
-
-export interface VolumeData {
-  date: string;
-  totalVolume: number;
-  sets: number;
-  reps: number;
-}
-
-export interface AdherenceData {
-  week: string;
-  adherence: number;
-  completed: number;
-  planned: number;
-}
-
-export interface PersonalRecords {
-  squat: number;
-  bench: number;
-  deadlift: number;
-  totalVolume: number;
-  longestStreak: number;
-}
-
-export interface ProgressMetrics {
-  bodyWeight: BodyWeightData[];
-  strength: StrengthData[];
-  volume: VolumeData[];
-  adherence: AdherenceData[];
-  personalRecords: PersonalRecords;
-  currentStats: {
-    weight: number;
-    bodyFat: number;
-    adherenceRate: number;
-    weeklyVolume: number;
-  };
-}
+import { logger } from '@/lib/logging';
+import type {
+  BodyWeightData,
+  StrengthData,
+  VolumeData,
+  AdherenceData,
+  PersonalRecords,
+  ProgressMetrics,
+} from '@/types/progress';
 
 export async function getProgressData(): Promise<ProgressMetrics | null> {
   try {
@@ -79,13 +39,13 @@ export async function getProgressData(): Promise<ProgressMetrics | null> {
 
     // Calcular PRs y stats básicos a partir de métricas corporales
     const latestBodyMetric = bodyMetrics[bodyMetrics.length - 1];
-    const currentWeight = latestBodyMetric?.weightKg || 0;
+    const currentWeight = latestBodyMetric?.weight || 0;
     const currentBodyFat = latestBodyMetric?.bodyFat || 0;
 
     // Formatear datos para el frontend
     const bodyWeight: BodyWeightData[] = bodyMetrics.map(m => ({
       date: format(new Date(m.date), 'MMM dd'),
-      weight: m.weightKg ?? 0,
+      weight: m.weight ?? 0,
       bodyFat: m.bodyFat || undefined,
     }));
 
@@ -119,7 +79,7 @@ export async function getProgressData(): Promise<ProgressMetrics | null> {
       }
     };
   } catch (error) {
-    console.error('Error getting progress data:', error);
+    logger.error('Error getting progress data:', error);
     return null;
   }
 }
@@ -143,11 +103,11 @@ export async function getBodyMetrics(weeks: number = 12): Promise<BodyWeightData
 
     return metrics.map(m => ({
       date: format(new Date(m.date), 'MMM dd'),
-      weight: m.weightKg ?? 0,
+      weight: m.weight ?? 0,
       bodyFat: m.bodyFat || undefined,
     }));
   } catch (error) {
-    console.error('Error getting body metrics:', error);
+    logger.error('Error getting body metrics:', error);
     return [];
   }
 }

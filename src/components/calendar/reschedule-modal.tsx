@@ -1,4 +1,5 @@
 'use client';
+import { clientLogger } from "@/lib/logging/client";
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -40,7 +41,7 @@ export function RescheduleModal({
       await onConfirm();
       onClose();
     } catch (error) {
-      console.error('Error confirming reschedule:', error);
+      clientLogger.error('Error confirming reschedule:', error);
     } finally {
       setIsLoading(false);
     }

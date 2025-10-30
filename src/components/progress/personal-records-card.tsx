@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { PersonalRecords } from '@/app/actions/progress-actions';
+import type { PersonalRecords } from '@/types/progress';
 import { Trophy, TrendingUp, Zap, Award, Target } from 'lucide-react';
 
 interface PersonalRecordsCardProps {

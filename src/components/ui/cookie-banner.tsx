@@ -3,10 +3,10 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
-const ENABLE = (process.env.NEXT_PUBLIC_ENABLE_COOKIE_BANNER ?? process.env.ENABLE_COOKIE_BANNER) === 'true';
+const ENABLE = process.env.NEXT_PUBLIC_ENABLE_COOKIE_BANNER === 'true';
 const KEY = 'kairos_cookie_consent_v1';
 
-export function CookieBanner() {
+export default function CookieBanner() {
   const [show, setShow] = useState(false);
 
   useEffect(() => {

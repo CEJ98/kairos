@@ -1,4 +1,4 @@
-import '../../sentry.client.config';
+import { SentryClientInit } from '@/components/providers/sentry-init';
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import Script from 'next/script';
@@ -6,9 +6,9 @@ import { Inter, Poppins } from 'next/font/google';
 import { ThemeProvider } from '@/components/providers/theme-provider';
 import { SessionProvider } from '@/components/providers/session-provider';
 import { Toaster } from '@/components/ui/toaster';
-import { Toaster as SonnerToaster } from 'sonner';
-import { CookieBanner } from '@/components/ui/cookie-banner';
-import { PwaProvider } from '@/components/providers/pwa-provider';
+// import { Toaster as SonnerToaster } from 'sonner';
+import dynamic from 'next/dynamic';
+// import { PwaProvider } from '@/components/providers/pwa-provider';
 import '@/app/globals.css';
 
 const inter = Inter({
@@ -58,19 +58,43 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   const umamiWebsiteId = process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID ?? process.env.UMAMI_WEBSITE_ID;
   const umamiSrc = process.env.NEXT_PUBLIC_UMAMI_SRC ?? process.env.UMAMI_SRC;
-  const showCookieBanner = (process.env.NEXT_PUBLIC_ENABLE_COOKIE_BANNER ?? process.env.ENABLE_COOKIE_BANNER) === 'true';
+  const showCookieBanner = process.env.NEXT_PUBLIC_ENABLE_COOKIE_BANNER === 'true';
+  // const CookieBannerNoSSR = showCookieBanner
+  //   ? dynamic(() => import('@/components/ui/cookie-banner'), { ssr: false })
+  //   : null;
   return (
     <html lang="es" suppressHydrationWarning>
       <body className={`${inter.variable} ${poppins.variable} font-sans bg-background`}>
+        {/* Dev-only: fuerza desregistro de Service Workers para evitar chunks desactualizados */}
+        {process.env.NODE_ENV !== 'production' ? (
+          <Script id="sw-unregister" strategy="beforeInteractive">
+            {`
+              (function(){
+                if (typeof window === 'undefined') return;
+                if ('serviceWorker' in navigator) {
+                  navigator.serviceWorker.getRegistrations().then(function(regs){
+                    regs.forEach(function(r){ r.unregister(); });
+                  }).catch(function(){ });
+                }
+                if ('caches' in window) {
+                  caches.keys().then(function(keys){
+                    keys.forEach(function(key){ caches.delete(key).catch(function(){ }); });
+                  }).catch(function(){ });
+                }
+              })();
+            `}
+          </Script>
+        ) : null}
         <SessionProvider>
           <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
             {children}
             <Toaster />
-            <SonnerToaster position="top-right" richColors />
+            {/* <SonnerToaster position="top-right" richColors /> */}
           </ThemeProvider>
         </SessionProvider>
-        <PwaProvider />
-        {showCookieBanner ? <CookieBanner /> : null}
+        {/* <SentryClientInit /> */}
+        {/* <PwaProvider /> */}
+        {/* {CookieBannerNoSSR ? <CookieBannerNoSSR /> : null} */}
         {umamiWebsiteId && umamiSrc ? (
           <Script
             src={umamiSrc}

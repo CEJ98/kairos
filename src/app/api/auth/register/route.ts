@@ -1,5 +1,4 @@
 import { logger } from "@/lib/logging";
-
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/clients/prisma';
 import { hashPassword } from '@/lib/auth/password';

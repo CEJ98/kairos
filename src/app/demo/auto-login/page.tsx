@@ -1,4 +1,5 @@
 'use client';
+import { clientLogger } from "@/lib/logging/client";
 
 import { useEffect, useState } from 'react';
 import { signIn } from 'next-auth/react';
@@ -25,7 +26,7 @@ export default function DemoAutoLoginPage() {
         if (result?.error) {
           setStatus('error');
           setError(result.error);
-          console.error('Error de auto-login:', result.error);
+          clientLogger.error('Error de auto-login:', result.error);
           return;
         }
 
@@ -40,7 +41,7 @@ export default function DemoAutoLoginPage() {
       } catch (err) {
         setStatus('error');
         setError(err instanceof Error ? err.message : 'Error desconocido');
-        console.error('Error en auto-login:', err);
+        clientLogger.error('Error en auto-login:', err);
       }
     };
 

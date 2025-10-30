@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { TrendingDown, TrendingUp, Minus } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { BodyWeightData } from '@/app/actions/metrics-actions';
+import type { BodyWeightData } from '@/types/metrics';
 
 interface WeightChartProps {
   data: BodyWeightData[];

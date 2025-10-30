@@ -45,7 +45,7 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-// SQLite connector in Prisma does not support enums; use string fields instead.
+// Using string fields for status enums to maintain flexibility across different Prisma versions
 
 model User {
   id             String          @id @default(cuid())

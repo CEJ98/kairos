@@ -2,7 +2,7 @@
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { VolumeData } from '@/app/actions/progress-actions';
+import type { VolumeData } from '@/types/progress';
 
 interface VolumeChartProps {
   data: VolumeData[];

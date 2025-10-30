@@ -13,7 +13,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Ruler } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { BodyMeasurementsData } from '@/app/actions/metrics-actions';
+import type { BodyMeasurementsData } from '@/types/metrics';
 
 interface MeasurementsRadarProps {
   data: BodyMeasurementsData | null;

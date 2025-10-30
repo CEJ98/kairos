@@ -4,7 +4,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { motion } from 'framer-motion';
 import { Clock, Dumbbell, CheckCircle2, AlertCircle, GripVertical } from 'lucide-react';
-import { WorkoutCardData } from '@/app/actions/calendar-actions';
+import type { WorkoutCardData } from '@/types/calendar';
 import { cn } from '@/lib/utils';
 
 interface WorkoutCardProps {

@@ -8,16 +8,17 @@ import { Camera, X, Trash2, ChevronLeft, ChevronRight, Image as ImageIcon } from
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ProgressPhotoData, deleteProgressPhoto } from '@/app/actions/metrics-actions';
+import type { ProgressPhotoData } from '@/types/metrics';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 
 interface PhotoComparisonProps {
   photos: ProgressPhotoData[];
   onUploadClick: () => void;
+  onDeletePhoto: (id: string) => Promise<{ success: boolean; error?: string }>;
 }
 
-export function PhotoComparison({ photos, onUploadClick }: PhotoComparisonProps) {
+export function PhotoComparison({ photos, onUploadClick, onDeletePhoto }: PhotoComparisonProps) {
   const router = useRouter();
   const [selectedPhoto, setSelectedPhoto] = useState<ProgressPhotoData | null>(null);
   const [compareMode, setCompareMode] = useState(false);
@@ -33,7 +34,7 @@ export function PhotoComparison({ photos, onUploadClick }: PhotoComparisonProps)
     }
 
     setIsDeleting(true);
-    const result = await deleteProgressPhoto(photoId);
+    const result = await onDeletePhoto(photoId);
 
     if (result.success) {
       toast.success('Foto eliminada exitosamente');
@@ -241,7 +242,7 @@ export function PhotoComparison({ photos, onUploadClick }: PhotoComparisonProps)
                   )}
                 </div>
                 <Button
-                  variant="destructive"
+                  variant="outline"
                   size="sm"
                   onClick={() => handleDeletePhoto(selectedPhoto.id)}
                   disabled={isDeleting}

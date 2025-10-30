@@ -189,7 +189,7 @@ export default async function InsightsPage() {
 
 function buildInsights(
   adherence: { adherence: number }[],
-  metrics: { weightKg: number | null }[]
+  metrics: { weight: number | null }[]
 ): InsightCard[] {
   const insights: InsightCard[] = [];
 
@@ -208,8 +208,8 @@ function buildInsights(
   }
 
   if (metrics.length >= 4) {
-    const last = metrics.at(-1)?.weightKg ?? 0;
-    const previous = metrics.at(-4)?.weightKg ?? last;
+    const last = metrics.at(-1)?.weight ?? 0;
+    const previous = metrics.at(-4)?.weight ?? last;
     if (last > previous) {
       insights.push({
         title: 'Peso ascendente',

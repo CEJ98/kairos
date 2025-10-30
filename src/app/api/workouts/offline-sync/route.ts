@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logging";
 import { NextResponse } from 'next/server';
 
 import { authSession } from '@/lib/auth/session';
@@ -41,7 +42,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error('offline-sync-error', error);
+    logger.error('offline-sync-error', error);
     return NextResponse.json({ error: 'Error sincronizando progreso' }, { status: 500 });
   }
 }

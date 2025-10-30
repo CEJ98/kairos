@@ -8,7 +8,7 @@ import { authSession } from '@/lib/auth/session';
 import { toCsv } from '@/lib/utils/csv';
 import { getRangeStart } from '@/lib/utils/date-range';
 
-type BodyMetricLite = { date: Date; weightKg: number | null; bodyFat: number | null };
+type BodyMetricLite = { date: Date; weight: number | null; bodyFat: number | null };
 type AdherenceMetricLite = { createdAt: Date; adherence: number };
 
 const rangeSchema = z.enum(['8w', '12w', '24w']);
@@ -43,7 +43,7 @@ export async function exportProgressCsv(rawRange: unknown = '8w') {
 
   const rows = metrics.map((metric) => ({
     fecha: metric.date.toISOString().split('T')[0],
-    pesoKg: metric.weightKg ?? '',
+    pesoKg: metric.weight ?? '',
     grasaCorporal: metric.bodyFat ?? ''
   }));
 

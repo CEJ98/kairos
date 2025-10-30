@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { AppShell } from '@/components/layout/app-shell';
 import { prisma } from '@/lib/clients/prisma';
 import { ExerciseFilters } from '@/components/forms/exercise-filters';
@@ -19,20 +21,35 @@ type ExerciseItem = {
 };
 
 export default async function ExercisesPage({ searchParams }: ExercisesPageProps) {
-  const [allExercises, muscles, equipment] = await Promise.all([
-    prisma.exercise.findMany({ orderBy: { name: 'asc' } }),
-    prisma.exercise.findMany({
-      distinct: ['muscleGroup'],
-      select: { muscleGroup: true }
-    }),
-    prisma.exercise.findMany({
-      distinct: ['equipment'],
-      select: { equipment: true }
-    })
-  ]);
+  let allExercises: ExerciseItem[] = [];
+  let muscles: { muscleGroup: string | null }[] = [];
+  let equipment: { equipment: string | null }[] = [];
 
-  const uniqueMuscles = muscles.map((item) => item.muscleGroup).filter(Boolean);
-  const uniqueEquipment = equipment.map((item) => item.equipment).filter(Boolean);
+  try {
+    [allExercises, muscles, equipment] = await Promise.all([
+      prisma.exercise.findMany({ orderBy: { name: 'asc' } }),
+      prisma.exercise.findMany({
+        distinct: ['muscleGroup'],
+        select: { muscleGroup: true }
+      }),
+      prisma.exercise.findMany({
+        distinct: ['equipment'],
+        select: { equipment: true }
+      })
+    ]);
+  } catch {
+    // Entorno sin DB; mostrar página vacía sin bloquear build
+    allExercises = [];
+    muscles = [];
+    equipment = [];
+  }
+
+  const uniqueMuscles = muscles
+    .map((item) => item.muscleGroup)
+    .filter((m): m is string => Boolean(m));
+  const uniqueEquipment = equipment
+    .map((item) => item.equipment)
+    .filter((e): e is string => Boolean(e));
 
   const filtered = allExercises.filter((exercise) => {
     const muscleMatch = searchParams.muscle ? exercise.muscleGroup === searchParams.muscle : true;

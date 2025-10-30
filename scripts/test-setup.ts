@@ -149,7 +149,7 @@ async function testBodyMetrics() {
     log('✅', `Métricas corporales OK (${duration}ms)`);
     log('   ', `- Total: ${metricsCount}`);
     if (latestMetrics.length > 0) {
-      log('   ', `- Última: ${latestMetrics[0].weightKg}kg para ${latestMetrics[0].user.email}`);
+      log('   ', `- Última: ${latestMetrics[0].weight}kg para ${latestMetrics[0].user.email}`);
     }
 
     return metricsCount;
